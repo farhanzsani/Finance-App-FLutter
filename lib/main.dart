@@ -11,10 +11,27 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: MainPage(),
-      theme: ThemeData(primarySwatch: Colors.pink),
-    );
+   return MaterialApp(
+  debugShowCheckedModeBanner: false,
+  theme: ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFFCADEFC),
+      brightness: Brightness.light,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFFCADEFC),
+      foregroundColor: Colors.black87,
+      elevation: 0,
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: Color(0xFFCADEFC),
+      foregroundColor: Colors.black87,
+    ),
+  ),
+  home: const MainPage(),
+);
+
   }
 }
 
