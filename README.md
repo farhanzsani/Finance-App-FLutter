@@ -1,4 +1,4 @@
-# finance_app_for_nacha
+# finance_app_flutter
 
 A new Flutter project.
 
