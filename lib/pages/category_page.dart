@@ -1,8 +1,5 @@
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/foundation/key.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CategoryPage extends StatefulWidget {
@@ -20,12 +17,13 @@ class _CategoryPageState extends State<CategoryPage> {
       context: context, 
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Color(0xFFCADEFC),
           content: SingleChildScrollView(
             child: Center(
               child: Column(
                 children: [
                   Text(
-                    (isExpense) ? 'add Expense category' : 'add Income category',
+                    (isExpense) ? 'Add Expense category' : 'Add Income category',
                     style: GoogleFonts.montserrat(fontSize: 18, color: (isExpense) ? Colors.red : Colors.green),
                   ),
                   SizedBox(height: 20),
@@ -36,7 +34,7 @@ class _CategoryPageState extends State<CategoryPage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  ElevatedButton(onPressed: () {}, child: Text('save')),
+                  ElevatedButton(onPressed: () {}, child: Text('save', style: GoogleFonts.montserrat(color: Color(0xFF8C9EFF)),),)
                 ],
               ),
             ),
