@@ -45,12 +45,14 @@ class _MainPageState extends State<MainPage> {
                     vertical: 36,
                     horizontal: 16,
                   ),
-                  child: Text(
-                    'categories',
-                    style: GoogleFonts.montserrat(
-                      color: const Color(0xFF8C9EFF),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                  child: Center(
+                    child: Text(
+                      'categories',
+                      style: GoogleFonts.montserrat(
+                        color: const Color(0xFF8C9EFF),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
