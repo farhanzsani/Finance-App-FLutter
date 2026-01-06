@@ -90,13 +90,14 @@ class _MainPageState extends State<MainPage> {
                   onTapped(0);
                 },
               ),
+              SizedBox(width: 100),
               IconButton(
                 icon: Icon(Icons.account_balance_wallet, color: const Color(0xFF8C9EFF)),
                 onPressed: () {
                   onTapped(2);
                 },
               ),
-              SizedBox(width: 100),
+              
               IconButton(
                 icon: Icon(Icons.list, color: const Color(0xFF8C9EFF)),
                 onPressed: () {

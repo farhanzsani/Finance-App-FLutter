@@ -229,7 +229,7 @@ void openDialog(WalletData? wallet) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Wallets'),
+        title:  Text('Wallets', style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w600),),
         centerTitle: true,
         backgroundColor: const Color(0xFFF5F7FA),
         foregroundColor: const Color(0xFF8C9EFF),
@@ -273,11 +273,26 @@ void openDialog(WalletData? wallet) {
                     Icons.account_balance_wallet_rounded,
                     color: Color(0xFF8C9EFF),
                   ),
-                  title: Text(
-                    wallet.name,
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        wallet.name,
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+                      
+                      Text(
+                        'Saldo: \Rp. ${wallet.balance.toStringAsFixed(2)}',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -288,13 +303,55 @@ void openDialog(WalletData? wallet) {
                         onPressed: () => openDialog(wallet),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_rounded),
-                        color: Colors.red[300],
-                        onPressed: () async {
-                          await delete(wallet.id);
-                          setState(() {});
-                        },
-                      ),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Text(
+                                        'Delete Category',
+                                        style: GoogleFonts.montserrat(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      content: Text(
+                                        'kamu yakin mau hapus wallet "${wallet.name}" ini chaaa ??',
+                                        style: GoogleFonts.montserrat(),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: Text(
+                                            'Cancel',
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            delete(wallet.id);
+                                            Navigator.pop(context);
+                                            setState(() {});
+                                          },
+                                          child: Text(
+                                            'Delete',
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                icon: Icon(Icons.delete_rounded),
+                                color: Colors.red[300],
+                                splashRadius: 20,
+                              ),
                     ],
                   ),
                 ),
@@ -310,7 +367,8 @@ void openDialog(WalletData? wallet) {
           borderRadius: BorderRadius.circular(50),
         ),
         onPressed: () => openDialog(null),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white, size: 28,),
+        elevation: 4,
       ),
     );
   }
