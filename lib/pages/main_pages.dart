@@ -15,9 +15,9 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   static const Color primaryColor = Color(0xFFCADEFC);
-  final List<Widget> _childern = [const HomePage(), const CategoryPage(), WalletPage()];
-
+  
   int currentIndex = 0;
+  DateTime selectedDate = DateTime.now();
 
   void onTapped(int index) {
     setState(() {
@@ -25,8 +25,29 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  void onDateChanged(DateTime date) {
+    setState(() {
+      selectedDate = date;
+    });
+  }
+
+  // Method to get current page based on index
+  Widget _getCurrentPage() {
+    switch (currentIndex) {
+      case 0:
+        return HomePage(selectedDate: selectedDate);
+      case 1:
+        return const CategoryPage();
+      case 2:
+        return WalletPage();
+      default:
+        return HomePage(selectedDate: selectedDate);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: (currentIndex == 0)
           ? CalendarAppBar(
@@ -34,8 +55,10 @@ class _MainPageState extends State<MainPage> {
               locale: 'id',
               white: const Color(0xFF8C9EFF), // background
               black: const Color(0xFF2F3A5F), // teks (gelap & jelas)
-              accent: const Color(0xFFCADEFC), // highlight // highlight tanggal
-              onDateChanged: (value) => print(value),
+              accent: const Color(0xFFCADEFC), // highlight
+              onDateChanged: (value) {
+                onDateChanged(value);
+              },
               firstDate: DateTime.now().subtract(const Duration(days: 140)),
               lastDate: DateTime.now(),
             )
@@ -51,7 +74,7 @@ class _MainPageState extends State<MainPage> {
               preferredSize: Size.fromHeight(100),
             ),
 
-      body: _childern[currentIndex],
+      body: _getCurrentPage(),
 
       floatingActionButton: Visibility(
         visible: (currentIndex == 0) ? true : false,
@@ -90,18 +113,18 @@ class _MainPageState extends State<MainPage> {
                   onTapped(0);
                 },
               ),
-              SizedBox(width: 100),
-              IconButton(
-                icon: Icon(Icons.account_balance_wallet, color: const Color(0xFF8C9EFF)),
-                onPressed: () {
-                  onTapped(2);
-                },
-              ),
-              
+              SizedBox(width: 100), // Space for FAB
               IconButton(
                 icon: Icon(Icons.list, color: const Color(0xFF8C9EFF)),
                 onPressed: () {
                   onTapped(1);
+                },
+              ),
+              
+              IconButton(
+                icon: Icon(Icons.account_balance_wallet, color: const Color(0xFF8C9EFF)),
+                onPressed: () {
+                  onTapped(2);
                 },
               ),
             ],

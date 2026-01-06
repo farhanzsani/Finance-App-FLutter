@@ -451,6 +451,17 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _wallet_idMeta = const VerificationMeta(
+    'wallet_id',
+  );
+  @override
+  late final GeneratedColumn<int> wallet_id = GeneratedColumn<int>(
+    'wallet_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _transaction_dateMeta = const VerificationMeta(
     'transaction_date',
   );
@@ -510,6 +521,7 @@ class $TransactionsTable extends Transactions
     id,
     name,
     category_id,
+    wallet_id,
     transaction_date,
     amount,
     created,
@@ -549,6 +561,14 @@ class $TransactionsTable extends Transactions
       );
     } else if (isInserting) {
       context.missing(_category_idMeta);
+    }
+    if (data.containsKey('wallet_id')) {
+      context.handle(
+        _wallet_idMeta,
+        wallet_id.isAcceptableOrUnknown(data['wallet_id']!, _wallet_idMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wallet_idMeta);
     }
     if (data.containsKey('transaction_date')) {
       context.handle(
@@ -612,6 +632,10 @@ class $TransactionsTable extends Transactions
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
       )!,
+      wallet_id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}wallet_id'],
+      )!,
       transaction_date: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}transaction_date'],
@@ -645,6 +669,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final int id;
   final String name;
   final int category_id;
+  final int wallet_id;
   final DateTime transaction_date;
   final int amount;
   final DateTime created;
@@ -654,6 +679,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.id,
     required this.name,
     required this.category_id,
+    required this.wallet_id,
     required this.transaction_date,
     required this.amount,
     required this.created,
@@ -666,6 +692,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
     map['category_id'] = Variable<int>(category_id);
+    map['wallet_id'] = Variable<int>(wallet_id);
     map['transaction_date'] = Variable<DateTime>(transaction_date);
     map['amount'] = Variable<int>(amount);
     map['created'] = Variable<DateTime>(created);
@@ -681,6 +708,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       id: Value(id),
       name: Value(name),
       category_id: Value(category_id),
+      wallet_id: Value(wallet_id),
       transaction_date: Value(transaction_date),
       amount: Value(amount),
       created: Value(created),
@@ -700,6 +728,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       category_id: serializer.fromJson<int>(json['category_id']),
+      wallet_id: serializer.fromJson<int>(json['wallet_id']),
       transaction_date: serializer.fromJson<DateTime>(json['transaction_date']),
       amount: serializer.fromJson<int>(json['amount']),
       created: serializer.fromJson<DateTime>(json['created']),
@@ -714,6 +743,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'category_id': serializer.toJson<int>(category_id),
+      'wallet_id': serializer.toJson<int>(wallet_id),
       'transaction_date': serializer.toJson<DateTime>(transaction_date),
       'amount': serializer.toJson<int>(amount),
       'created': serializer.toJson<DateTime>(created),
@@ -726,6 +756,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     int? id,
     String? name,
     int? category_id,
+    int? wallet_id,
     DateTime? transaction_date,
     int? amount,
     DateTime? created,
@@ -735,6 +766,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     id: id ?? this.id,
     name: name ?? this.name,
     category_id: category_id ?? this.category_id,
+    wallet_id: wallet_id ?? this.wallet_id,
     transaction_date: transaction_date ?? this.transaction_date,
     amount: amount ?? this.amount,
     created: created ?? this.created,
@@ -748,6 +780,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       category_id: data.category_id.present
           ? data.category_id.value
           : this.category_id,
+      wallet_id: data.wallet_id.present ? data.wallet_id.value : this.wallet_id,
       transaction_date: data.transaction_date.present
           ? data.transaction_date.value
           : this.transaction_date,
@@ -768,6 +801,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('category_id: $category_id, ')
+          ..write('wallet_id: $wallet_id, ')
           ..write('transaction_date: $transaction_date, ')
           ..write('amount: $amount, ')
           ..write('created: $created, ')
@@ -782,6 +816,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     id,
     name,
     category_id,
+    wallet_id,
     transaction_date,
     amount,
     created,
@@ -795,6 +830,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.id == this.id &&
           other.name == this.name &&
           other.category_id == this.category_id &&
+          other.wallet_id == this.wallet_id &&
           other.transaction_date == this.transaction_date &&
           other.amount == this.amount &&
           other.created == this.created &&
@@ -806,6 +842,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<int> id;
   final Value<String> name;
   final Value<int> category_id;
+  final Value<int> wallet_id;
   final Value<DateTime> transaction_date;
   final Value<int> amount;
   final Value<DateTime> created;
@@ -815,6 +852,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.category_id = const Value.absent(),
+    this.wallet_id = const Value.absent(),
     this.transaction_date = const Value.absent(),
     this.amount = const Value.absent(),
     this.created = const Value.absent(),
@@ -825,6 +863,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.id = const Value.absent(),
     required String name,
     required int category_id,
+    required int wallet_id,
     required DateTime transaction_date,
     required int amount,
     required DateTime created,
@@ -832,6 +871,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.deleted_at = const Value.absent(),
   }) : name = Value(name),
        category_id = Value(category_id),
+       wallet_id = Value(wallet_id),
        transaction_date = Value(transaction_date),
        amount = Value(amount),
        created = Value(created),
@@ -840,6 +880,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<int>? category_id,
+    Expression<int>? wallet_id,
     Expression<DateTime>? transaction_date,
     Expression<int>? amount,
     Expression<DateTime>? created,
@@ -850,6 +891,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (category_id != null) 'category_id': category_id,
+      if (wallet_id != null) 'wallet_id': wallet_id,
       if (transaction_date != null) 'transaction_date': transaction_date,
       if (amount != null) 'amount': amount,
       if (created != null) 'created': created,
@@ -862,6 +904,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<int>? id,
     Value<String>? name,
     Value<int>? category_id,
+    Value<int>? wallet_id,
     Value<DateTime>? transaction_date,
     Value<int>? amount,
     Value<DateTime>? created,
@@ -872,6 +915,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       id: id ?? this.id,
       name: name ?? this.name,
       category_id: category_id ?? this.category_id,
+      wallet_id: wallet_id ?? this.wallet_id,
       transaction_date: transaction_date ?? this.transaction_date,
       amount: amount ?? this.amount,
       created: created ?? this.created,
@@ -891,6 +935,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     }
     if (category_id.present) {
       map['category_id'] = Variable<int>(category_id.value);
+    }
+    if (wallet_id.present) {
+      map['wallet_id'] = Variable<int>(wallet_id.value);
     }
     if (transaction_date.present) {
       map['transaction_date'] = Variable<DateTime>(transaction_date.value);
@@ -916,6 +963,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('category_id: $category_id, ')
+          ..write('wallet_id: $wallet_id, ')
           ..write('transaction_date: $transaction_date, ')
           ..write('amount: $amount, ')
           ..write('created: $created, ')
@@ -1563,6 +1611,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<int> id,
       required String name,
       required int category_id,
+      required int wallet_id,
       required DateTime transaction_date,
       required int amount,
       required DateTime created,
@@ -1574,6 +1623,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<int> category_id,
+      Value<int> wallet_id,
       Value<DateTime> transaction_date,
       Value<int> amount,
       Value<DateTime> created,
@@ -1602,6 +1652,11 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<int> get category_id => $composableBuilder(
     column: $table.category_id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get wallet_id => $composableBuilder(
+    column: $table.wallet_id,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1655,6 +1710,11 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get wallet_id => $composableBuilder(
+    column: $table.wallet_id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get transaction_date => $composableBuilder(
     column: $table.transaction_date,
     builder: (column) => ColumnOrderings(column),
@@ -1700,6 +1760,9 @@ class $$TransactionsTableAnnotationComposer
     column: $table.category_id,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get wallet_id =>
+      $composableBuilder(column: $table.wallet_id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get transaction_date => $composableBuilder(
     column: $table.transaction_date,
@@ -1757,6 +1820,7 @@ class $$TransactionsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int> category_id = const Value.absent(),
+                Value<int> wallet_id = const Value.absent(),
                 Value<DateTime> transaction_date = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<DateTime> created = const Value.absent(),
@@ -1766,6 +1830,7 @@ class $$TransactionsTableTableManager
                 id: id,
                 name: name,
                 category_id: category_id,
+                wallet_id: wallet_id,
                 transaction_date: transaction_date,
                 amount: amount,
                 created: created,
@@ -1777,6 +1842,7 @@ class $$TransactionsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 required int category_id,
+                required int wallet_id,
                 required DateTime transaction_date,
                 required int amount,
                 required DateTime created,
@@ -1786,6 +1852,7 @@ class $$TransactionsTableTableManager
                 id: id,
                 name: name,
                 category_id: category_id,
+                wallet_id: wallet_id,
                 transaction_date: transaction_date,
                 amount: amount,
                 created: created,
