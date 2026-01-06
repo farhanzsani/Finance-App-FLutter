@@ -12,6 +12,7 @@ class TransactionPage extends StatefulWidget {
 
 class _TransactionPageState extends State<TransactionPage> {
   bool isExpense = true;
+  bool isLoading = false;
   final db = AppDatabase();
   
   List<Category> categories = [];
@@ -33,34 +34,58 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Future<void> loadData() async {
-    final cats = await db.getAllCategoryRepo(isExpense ? 2 : 1);
-    final walls = await db.getAllWalletRepo();
-    
-    setState(() {
-      categories = cats;
-      wallets = walls;
-      if (categories.isNotEmpty) selectedCategoryId = categories.first.id;
-      if (wallets.isNotEmpty) selectedWalletId = wallets.first.id;
-    });
+    try {
+      final cats = await db.getAllCategoryRepo(isExpense ? 2 : 1);
+      final walls = await db.getAllWalletRepo();
+      
+      if (mounted) {
+        setState(() {
+          categories = cats;
+          wallets = walls;
+          if (categories.isNotEmpty) selectedCategoryId = categories.first.id;
+          if (wallets.isNotEmpty) selectedWalletId = wallets.first.id;
+        });
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> saveTransaction() async {
+    // Validate inputs
     if (amountController.text.isEmpty || 
         dateController.text.isEmpty ||
         nameController.text.isEmpty ||
         selectedCategoryId == null ||
         selectedWalletId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Mohon lengkapi semua field'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Mohon lengkapi semua field'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
-      );
+        );
+      }
       return;
+    }
+
+    // Show loading
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
     }
 
     try {
@@ -73,30 +98,36 @@ class _TransactionPageState extends State<TransactionPage> {
         isExpense: isExpense,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Transaksi berhasil disimpan!'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-
-      Navigator.pop(context);
+      // Navigate back
+      if (mounted) {
+        Navigator.of(context).pop(true); // Return true to indicate success
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal menyimpan: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      print('Error saving transaction: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    dateController.dispose();
+    amountController.dispose();
+    nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -245,7 +276,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(50),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: Offset(0, 2),
                     ),
@@ -309,7 +340,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(50),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: Offset(0, 2),
                     ),
@@ -332,7 +363,7 @@ class _TransactionPageState extends State<TransactionPage> {
                             Container(
                               padding: EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: (isExpense ? Colors.red : Colors.green).withAlpha(10),
+                                color: (isExpense ? Colors.red : Colors.green).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -374,7 +405,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(50),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: Offset(0, 2),
                     ),
@@ -397,7 +428,7 @@ class _TransactionPageState extends State<TransactionPage> {
                             Container(
                               padding: EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Color(0xFF8C9EFF).withAlpha(10),
+                                color: Color(0xFF8C9EFF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -452,7 +483,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(50),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: Offset(0, 2),
                     ),
@@ -463,7 +494,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   leading: Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Color(0xFF8C9EFF).withAlpha(10),
+                      color: Color(0xFF8C9EFF).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -525,30 +556,40 @@ class _TransactionPageState extends State<TransactionPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: saveTransaction,
+                  onPressed: isLoading ? null : saveTransaction,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF8C9EFF),
                     foregroundColor: Colors.white,
                     elevation: 0,
+                    disabledBackgroundColor: Colors.grey[300],
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    shadowColor: Color(0xFF8C9EFF).withAlpha(40),
+                    shadowColor: Color(0xFF8C9EFF).withOpacity(0.4),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 24),
-                      SizedBox(width: 8),
-                      Text(
-                        'Simpan Transaksi',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  child: isLoading
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 24),
+                            SizedBox(width: 8),
+                            Text(
+                              'Simpan Transaksi',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
 
@@ -577,7 +618,7 @@ class _TransactionPageState extends State<TransactionPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(50),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
                 offset: Offset(0, 2),
               ),
@@ -599,7 +640,7 @@ class _TransactionPageState extends State<TransactionPage> {
                 margin: EdgeInsets.all(12),
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Color(0xFF8C9EFF).withAlpha(10),
+                  color: Color(0xFF8C9EFF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(

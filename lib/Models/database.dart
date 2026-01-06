@@ -93,41 +93,35 @@ MigrationStrategy get migration {
 
   // CRUD Transaction
   Future<int> insertTransaction(TransactionsCompanion transaction) async {
-    return await into(transactions).insert(transaction);
-  }
+  return await into(transactions).insert(transaction);
+}
 
-  Future<List<Transaction>> getAllTransactions() async {
-    return await select(transactions).get();
-  }
+Future<List<Transaction>> getAllTransactions() async {
+  return await select(transactions).get();
+}
 
-  Future<List<Transaction>> getTransactionsByDateRange(DateTime start, DateTime end) async {
-    return await (select(transactions)
-      ..where((tbl) => tbl.transaction_date.isBetweenValues(start, end))
-      ..orderBy([(t) => OrderingTerm.desc(t.transaction_date)]))
-      .get();
-  }
+Future<void> updateTransaction(int id, TransactionsCompanion transaction) async {
+  await (update(transactions)..where((tbl) => tbl.id.equals(id)))
+    .write(transaction);
+}
 
-  Future<void> updateTransaction(int id, TransactionsCompanion transaction) async {
-    await (update(transactions)..where((tbl) => tbl.id.equals(id)))
-      .write(transaction);
-  }
+Future<void> deleteTransaction(int id) async {
+  await (delete(transactions)..where((tbl) => tbl.id.equals(id))).go();
+}
 
-  Future<void> deleteTransaction(int id) async {
-    await (delete(transactions)..where((tbl) => tbl.id.equals(id))).go();
-  }
-
-
-  Future<void> insertTransactionWithWalletUpdate({
-    required String name,
-    required int categoryId,
-    required DateTime transactionDate,
-    required int amount,
-    required int walletId,
-    required bool isExpense, // true = expense, false = income
-  }) async {
-    final now = DateTime.now();
-    
-    // Insert transaction
+// Insert transaction WITH wallet update
+Future<void> insertTransactionWithWalletUpdate({
+  required String name,
+  required int categoryId,
+  required DateTime transactionDate,
+  required int amount,
+  required int walletId,
+  required bool isExpense,
+}) async {
+  final now = DateTime.now();
+  
+  try {
+    // 1. Insert transaction first
     await into(transactions).insert(
       TransactionsCompanion.insert(
         name: name,
@@ -140,19 +134,66 @@ MigrationStrategy get migration {
       ),
     );
     
-    // Get current wallet balance
-    final wallet = await (select(this.wallet)..where((tbl) => tbl.id.equals(walletId))).getSingle();
+    // 2. Get current wallet balance
+    final walletData = await (select(wallet)
+      ..where((tbl) => tbl.id.equals(walletId))).getSingle();
     
-    // Update wallet balance
+    // 3. Calculate new balance
     double newBalance;
     if (isExpense) {
-      newBalance = wallet.balance - amount;
+      newBalance = walletData.balance - amount;
     } else {
-      newBalance = wallet.balance + amount;
+      newBalance = walletData.balance + amount;
     }
     
-    await updatebalanceWalletRepo(walletId, newBalance);
+    // 4. Update wallet balance
+    await (update(wallet)..where((tbl) => tbl.id.equals(walletId))).write(
+      WalletCompanion(
+        balance: Value(newBalance),
+        updated_at: Value(now),
+      ),
+    );
+  } catch (e) {
+    print('Error in insertTransactionWithWalletUpdate: $e');
+    rethrow;
   }
+}
+
+// Delete transaction WITH wallet balance restoration
+Future<void> deleteTransactionWithWalletUpdate(int transactionId) async {
+  try {
+    // 1. Get transaction data
+    final transaction = await (select(transactions)
+      ..where((tbl) => tbl.id.equals(transactionId))).getSingle();
+    
+    // 2. Get category to know if income/expense
+    final category = await (select(categories)
+      ..where((tbl) => tbl.id.equals(transaction.category_id))).getSingle();
+    
+    // 3. Get wallet
+    final walletData = await (select(wallet)
+      ..where((tbl) => tbl.id.equals(transaction.wallet_id))).getSingle();
+    
+    // 4. Restore wallet balance (reverse the transaction)
+    bool isExpense = category.type == 2;
+    double newBalance = isExpense
+      ? walletData.balance + transaction.amount // add back
+      : walletData.balance - transaction.amount; // subtract back
+    
+    await (update(wallet)..where((tbl) => tbl.id.equals(transaction.wallet_id))).write(
+      WalletCompanion(
+        balance: Value(newBalance),
+        updated_at: Value(DateTime.now()),
+      ),
+    );
+    
+    // 5. Delete transaction
+    await (delete(transactions)..where((tbl) => tbl.id.equals(transactionId))).go();
+  } catch (e) {
+    print('Error in deleteTransactionWithWalletUpdate: $e');
+    rethrow;
+  }
+}
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
