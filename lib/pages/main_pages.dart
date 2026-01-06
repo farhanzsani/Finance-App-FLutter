@@ -2,6 +2,7 @@ import 'package:calendar_appbar/calendar_appbar.dart';
 import 'package:finance_app_for_nacha/pages/category_page.dart';
 import 'package:finance_app_for_nacha/pages/home_page.dart';
 import 'package:finance_app_for_nacha/pages/transaction_page.dart';
+import 'package:finance_app_for_nacha/pages/wallet_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,7 +15,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   static const Color primaryColor = Color(0xFFCADEFC);
-  final List<Widget> _childern = [const HomePage(), const CategoryPage()];
+  final List<Widget> _childern = [const HomePage(), const CategoryPage(), WalletPage()];
 
   int currentIndex = 0;
 
@@ -44,16 +45,6 @@ class _MainPageState extends State<MainPage> {
                   padding: const EdgeInsets.symmetric(
                     vertical: 36,
                     horizontal: 16,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'categories',
-                      style: GoogleFonts.montserrat(
-                        color: const Color(0xFF8C9EFF),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -99,7 +90,13 @@ class _MainPageState extends State<MainPage> {
                   onTapped(0);
                 },
               ),
-              SizedBox(width: 10),
+              IconButton(
+                icon: Icon(Icons.account_balance_wallet, color: const Color(0xFF8C9EFF)),
+                onPressed: () {
+                  onTapped(2);
+                },
+              ),
+              SizedBox(width: 100),
               IconButton(
                 icon: Icon(Icons.list, color: const Color(0xFF8C9EFF)),
                 onPressed: () {

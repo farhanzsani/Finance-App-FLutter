@@ -926,11 +926,416 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   }
 }
 
+class $WalletTable extends Wallet with TableInfo<$WalletTable, WalletData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WalletTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 128,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _balanceMeta = const VerificationMeta(
+    'balance',
+  );
+  @override
+  late final GeneratedColumn<double> balance = GeneratedColumn<double>(
+    'balance',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdMeta = const VerificationMeta(
+    'created',
+  );
+  @override
+  late final GeneratedColumn<DateTime> created = GeneratedColumn<DateTime>(
+    'created',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updated_atMeta = const VerificationMeta(
+    'updated_at',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updated_at = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deleted_atMeta = const VerificationMeta(
+    'deleted_at',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deleted_at = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    balance,
+    created,
+    updated_at,
+    deleted_at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'wallet';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WalletData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('balance')) {
+      context.handle(
+        _balanceMeta,
+        balance.isAcceptableOrUnknown(data['balance']!, _balanceMeta),
+      );
+    }
+    if (data.containsKey('created')) {
+      context.handle(
+        _createdMeta,
+        created.isAcceptableOrUnknown(data['created']!, _createdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updated_atMeta,
+        updated_at.isAcceptableOrUnknown(data['updated_at']!, _updated_atMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updated_atMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deleted_atMeta,
+        deleted_at.isAcceptableOrUnknown(data['deleted_at']!, _deleted_atMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WalletData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WalletData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      balance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}balance'],
+      )!,
+      created: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created'],
+      )!,
+      updated_at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted_at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $WalletTable createAlias(String alias) {
+    return $WalletTable(attachedDatabase, alias);
+  }
+}
+
+class WalletData extends DataClass implements Insertable<WalletData> {
+  final int id;
+  final String name;
+  final double balance;
+  final DateTime created;
+  final DateTime updated_at;
+  final DateTime? deleted_at;
+  const WalletData({
+    required this.id,
+    required this.name,
+    required this.balance,
+    required this.created,
+    required this.updated_at,
+    this.deleted_at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['balance'] = Variable<double>(balance);
+    map['created'] = Variable<DateTime>(created);
+    map['updated_at'] = Variable<DateTime>(updated_at);
+    if (!nullToAbsent || deleted_at != null) {
+      map['deleted_at'] = Variable<DateTime>(deleted_at);
+    }
+    return map;
+  }
+
+  WalletCompanion toCompanion(bool nullToAbsent) {
+    return WalletCompanion(
+      id: Value(id),
+      name: Value(name),
+      balance: Value(balance),
+      created: Value(created),
+      updated_at: Value(updated_at),
+      deleted_at: deleted_at == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deleted_at),
+    );
+  }
+
+  factory WalletData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WalletData(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      balance: serializer.fromJson<double>(json['balance']),
+      created: serializer.fromJson<DateTime>(json['created']),
+      updated_at: serializer.fromJson<DateTime>(json['updated_at']),
+      deleted_at: serializer.fromJson<DateTime?>(json['deleted_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'balance': serializer.toJson<double>(balance),
+      'created': serializer.toJson<DateTime>(created),
+      'updated_at': serializer.toJson<DateTime>(updated_at),
+      'deleted_at': serializer.toJson<DateTime?>(deleted_at),
+    };
+  }
+
+  WalletData copyWith({
+    int? id,
+    String? name,
+    double? balance,
+    DateTime? created,
+    DateTime? updated_at,
+    Value<DateTime?> deleted_at = const Value.absent(),
+  }) => WalletData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    balance: balance ?? this.balance,
+    created: created ?? this.created,
+    updated_at: updated_at ?? this.updated_at,
+    deleted_at: deleted_at.present ? deleted_at.value : this.deleted_at,
+  );
+  WalletData copyWithCompanion(WalletCompanion data) {
+    return WalletData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      balance: data.balance.present ? data.balance.value : this.balance,
+      created: data.created.present ? data.created.value : this.created,
+      updated_at: data.updated_at.present
+          ? data.updated_at.value
+          : this.updated_at,
+      deleted_at: data.deleted_at.present
+          ? data.deleted_at.value
+          : this.deleted_at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WalletData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('balance: $balance, ')
+          ..write('created: $created, ')
+          ..write('updated_at: $updated_at, ')
+          ..write('deleted_at: $deleted_at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, balance, created, updated_at, deleted_at);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WalletData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.balance == this.balance &&
+          other.created == this.created &&
+          other.updated_at == this.updated_at &&
+          other.deleted_at == this.deleted_at);
+}
+
+class WalletCompanion extends UpdateCompanion<WalletData> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<double> balance;
+  final Value<DateTime> created;
+  final Value<DateTime> updated_at;
+  final Value<DateTime?> deleted_at;
+  const WalletCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.balance = const Value.absent(),
+    this.created = const Value.absent(),
+    this.updated_at = const Value.absent(),
+    this.deleted_at = const Value.absent(),
+  });
+  WalletCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.balance = const Value.absent(),
+    required DateTime created,
+    required DateTime updated_at,
+    this.deleted_at = const Value.absent(),
+  }) : name = Value(name),
+       created = Value(created),
+       updated_at = Value(updated_at);
+  static Insertable<WalletData> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<double>? balance,
+    Expression<DateTime>? created,
+    Expression<DateTime>? updated_at,
+    Expression<DateTime>? deleted_at,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (balance != null) 'balance': balance,
+      if (created != null) 'created': created,
+      if (updated_at != null) 'updated_at': updated_at,
+      if (deleted_at != null) 'deleted_at': deleted_at,
+    });
+  }
+
+  WalletCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<double>? balance,
+    Value<DateTime>? created,
+    Value<DateTime>? updated_at,
+    Value<DateTime?>? deleted_at,
+  }) {
+    return WalletCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      balance: balance ?? this.balance,
+      created: created ?? this.created,
+      updated_at: updated_at ?? this.updated_at,
+      deleted_at: deleted_at ?? this.deleted_at,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (balance.present) {
+      map['balance'] = Variable<double>(balance.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<DateTime>(created.value);
+    }
+    if (updated_at.present) {
+      map['updated_at'] = Variable<DateTime>(updated_at.value);
+    }
+    if (deleted_at.present) {
+      map['deleted_at'] = Variable<DateTime>(deleted_at.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WalletCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('balance: $balance, ')
+          ..write('created: $created, ')
+          ..write('updated_at: $updated_at, ')
+          ..write('deleted_at: $deleted_at')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
+  late final $WalletTable wallet = $WalletTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -938,6 +1343,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     categories,
     transactions,
+    wallet,
   ];
 }
 
@@ -1411,6 +1817,217 @@ typedef $$TransactionsTableProcessedTableManager =
       Transaction,
       PrefetchHooks Function()
     >;
+typedef $$WalletTableCreateCompanionBuilder =
+    WalletCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<double> balance,
+      required DateTime created,
+      required DateTime updated_at,
+      Value<DateTime?> deleted_at,
+    });
+typedef $$WalletTableUpdateCompanionBuilder =
+    WalletCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<double> balance,
+      Value<DateTime> created,
+      Value<DateTime> updated_at,
+      Value<DateTime?> deleted_at,
+    });
+
+class $$WalletTableFilterComposer
+    extends Composer<_$AppDatabase, $WalletTable> {
+  $$WalletTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updated_at => $composableBuilder(
+    column: $table.updated_at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deleted_at => $composableBuilder(
+    column: $table.deleted_at,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WalletTableOrderingComposer
+    extends Composer<_$AppDatabase, $WalletTable> {
+  $$WalletTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get balance => $composableBuilder(
+    column: $table.balance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updated_at => $composableBuilder(
+    column: $table.updated_at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deleted_at => $composableBuilder(
+    column: $table.deleted_at,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WalletTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WalletTable> {
+  $$WalletTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get balance =>
+      $composableBuilder(column: $table.balance, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updated_at => $composableBuilder(
+    column: $table.updated_at,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deleted_at => $composableBuilder(
+    column: $table.deleted_at,
+    builder: (column) => column,
+  );
+}
+
+class $$WalletTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WalletTable,
+          WalletData,
+          $$WalletTableFilterComposer,
+          $$WalletTableOrderingComposer,
+          $$WalletTableAnnotationComposer,
+          $$WalletTableCreateCompanionBuilder,
+          $$WalletTableUpdateCompanionBuilder,
+          (WalletData, BaseReferences<_$AppDatabase, $WalletTable, WalletData>),
+          WalletData,
+          PrefetchHooks Function()
+        > {
+  $$WalletTableTableManager(_$AppDatabase db, $WalletTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WalletTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WalletTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WalletTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<double> balance = const Value.absent(),
+                Value<DateTime> created = const Value.absent(),
+                Value<DateTime> updated_at = const Value.absent(),
+                Value<DateTime?> deleted_at = const Value.absent(),
+              }) => WalletCompanion(
+                id: id,
+                name: name,
+                balance: balance,
+                created: created,
+                updated_at: updated_at,
+                deleted_at: deleted_at,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<double> balance = const Value.absent(),
+                required DateTime created,
+                required DateTime updated_at,
+                Value<DateTime?> deleted_at = const Value.absent(),
+              }) => WalletCompanion.insert(
+                id: id,
+                name: name,
+                balance: balance,
+                created: created,
+                updated_at: updated_at,
+                deleted_at: deleted_at,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WalletTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WalletTable,
+      WalletData,
+      $$WalletTableFilterComposer,
+      $$WalletTableOrderingComposer,
+      $$WalletTableAnnotationComposer,
+      $$WalletTableCreateCompanionBuilder,
+      $$WalletTableUpdateCompanionBuilder,
+      (WalletData, BaseReferences<_$AppDatabase, $WalletTable, WalletData>),
+      WalletData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1419,4 +2036,6 @@ class $AppDatabaseManager {
       $$CategoriesTableTableManager(_db, _db.categories);
   $$TransactionsTableTableManager get transactions =>
       $$TransactionsTableTableManager(_db, _db.transactions);
+  $$WalletTableTableManager get wallet =>
+      $$WalletTableTableManager(_db, _db.wallet);
 }

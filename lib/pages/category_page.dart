@@ -33,6 +33,7 @@ class _CategoryPageState extends State<CategoryPage> {
     return await db.getAllCategoryRepo(type);
   }
 
+
   Future update(int id, String name) async {
     return await db.updateCategoryRepo(id, name);
   }
@@ -232,6 +233,14 @@ class _CategoryPageState extends State<CategoryPage> {
         child: Column(
           children: [
             // Header Section
+            Center(
+              child: Text("Categories",
+                  style: GoogleFonts.montserrat(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF8C9EFF),
+                  )),
+            ),
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -540,6 +549,9 @@ class _CategoryPageState extends State<CategoryPage> {
           openDialog(null);
         },
         backgroundColor: Color(0xFF8C9EFF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50),
+        ),
         child: Icon(Icons.add, color: Colors.white, size: 28),
         elevation: 4,
       ),
