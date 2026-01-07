@@ -33,10 +33,12 @@ class TransferWithWalletNames {
 class TransactionWithWallet {
   final Transaction transaction;
   final String walletName;
+  final Category category;
 
   TransactionWithWallet({
     required this.transaction,
     required this.walletName,
+    required this.category,
   });
 }
 
@@ -116,21 +118,25 @@ Future<List<Transaction>> getAllTransactions() async {
   return await select(transactions).get();
 }
 
-Future<List<TransactionWithWallet>> getTransactionsByWallet(int walletId) async {
+Stream<List<TransactionWithWallet>> watchTransactionsByWallet(int walletId) {
   final query = select(transactions).join([
+    // Join ke tabel Wallet
     innerJoin(wallet, wallet.id.equalsExp(transactions.wallet_id)),
+    // PENTING: Anda harus join ke Categories juga agar data category muncul!
+    innerJoin(categories, categories.id.equalsExp(transactions.category_id)),
   ])
     ..where(transactions.wallet_id.equals(walletId))
     ..orderBy([OrderingTerm.desc(transactions.transaction_date)]);
 
-  final result = await query.get();
-
-  return result.map((row) {
-    return TransactionWithWallet(
-      transaction: row.readTable(transactions),
-      walletName: row.readTable(wallet).name,
-    );
-  }).toList();
+  return query.watch().map((rows) {
+    return rows.map((row) {
+      return TransactionWithWallet(
+        transaction: row.readTable(transactions),
+        walletName: row.readTable(wallet).name,
+        category: row.readTable(categories), // Sekarang data category tersedia
+      );
+    }).toList();
+  });
 }
 
 

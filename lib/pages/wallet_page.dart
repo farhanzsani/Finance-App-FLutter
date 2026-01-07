@@ -365,7 +365,7 @@ void openDialog(WalletData? wallet) {
                                     leading: const Icon(Icons.history),
                                     title: const Text('Riwayat Transaksi'),
                                     onTap: () => Navigator.push(context, MaterialPageRoute(
-                                      builder: (c) => TransactionHistoryPage(wallet: wallet))),
+                                      builder: (c) => TransactionHistoryPage(wallet: wallet, db: db))),
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.swap_horiz),
