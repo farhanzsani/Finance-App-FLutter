@@ -1,8 +1,8 @@
 import 'package:calendar_appbar/calendar_appbar.dart';
-import 'package:finance_app_for_nacha/pages/category_page.dart';
-import 'package:finance_app_for_nacha/pages/home_page.dart';
-import 'package:finance_app_for_nacha/pages/transaction_page.dart';
-import 'package:finance_app_for_nacha/pages/wallet_page.dart';
+import 'package:Monchaa/pages/category_page.dart';
+import 'package:Monchaa/pages/home_page.dart';
+import 'package:Monchaa/pages/transaction_page.dart';
+import 'package:Monchaa/pages/wallet_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

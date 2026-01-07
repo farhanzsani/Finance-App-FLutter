@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:finance_app_for_nacha/Models/database.dart';
+import 'package:Monchaa/Models/database.dart';
+import 'package:intl/intl.dart';
 
 class TransferHistoryPage extends StatelessWidget {
   final WalletData wallet;
@@ -68,6 +69,12 @@ class TransferHistoryPage extends StatelessWidget {
                             isIncoming ? 'Transfer Masuk' : 'Transfer Keluar',
                             style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
                           ),
+
+                          Text(
+                            DateFormat('dd MMM yyyy • HH:mm').format(tr.transfer.transfer_date),
+                            style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey),
+                          ),
+
                           Text(
                             isIncoming
                                 ? 'Dari: ${tr.sourceName}'

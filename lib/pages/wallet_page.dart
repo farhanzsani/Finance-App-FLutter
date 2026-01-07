@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:finance_app_for_nacha/Models/database.dart';
-import 'package:finance_app_for_nacha/pages/transaction_history_page.dart';
-import 'package:finance_app_for_nacha/pages/transfer_history_page.dart';
+import 'package:Monchaa/Models/database.dart';
+import 'package:Monchaa/pages/transaction_history_page.dart';
+import 'package:Monchaa/pages/transfer_history_page.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});

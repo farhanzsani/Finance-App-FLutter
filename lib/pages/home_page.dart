@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:finance_app_for_nacha/Models/database.dart';
+import 'package:Monchaa/Models/database.dart';
 import 'package:drift/drift.dart' hide Column;
 
 class HomePage extends StatefulWidget {
@@ -526,6 +526,7 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: 4),
+                              
                               Text(
                                 category.name,
                                 style: GoogleFonts.montserrat(
@@ -533,7 +534,9 @@ class _HomePageState extends State<HomePage> {
                                   color: Colors.grey[600],
                                 ),
                               ),
+
                               SizedBox(height: 2),
+                          
                               Text(
                                 item.wallet.name.toString(), 
                                 style: GoogleFonts.montserrat(
@@ -541,6 +544,17 @@ class _HomePageState extends State<HomePage> {
                                   color: Colors.grey[500],
                                 ),
                               ),
+
+                              Text(
+                                DateFormat('dd MMM yyyy • HH:mm').format(transaction.transaction_date),
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+
+
+                             
                             ],
                           ),
                           trailing: Column(

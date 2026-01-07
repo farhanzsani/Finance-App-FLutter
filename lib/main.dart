@@ -1,4 +1,4 @@
-import 'package:finance_app_for_nacha/pages/main_pages.dart';
+import 'package:Monchaa/pages/main_pages.dart';
 // import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
