@@ -10,14 +10,6 @@ import 'transfer.dart';
 
 part 'database.g.dart';
 
-
-
-@DriftDatabase(
-  tables: [Categories, Transactions, Wallet, Transfers],
-)
-
-
-
 class TransferWithWalletNames {
   final Transfer transfer;
   final String sourceName;
@@ -42,13 +34,13 @@ class TransactionWithWallet {
   });
 }
 
+@DriftDatabase(
+  tables: [Categories, Transactions, Wallet, Transfers],
+)
 class AppDatabase extends _$AppDatabase {
-  // After generating code, this class needs to define a `schemaVersion` getter
-  // and a constructor telling drift where the database should be stored.
-  // These are described in the getting started guide: https://drift.simonbinder.eu/setup/
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
- @override
+  @override
   int get schemaVersion => 4; // NAIK ke 4!
 
   @override
