@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:finance_app_for_nacha/Models/database.dart';
+import 'package:finance_app_for_nacha/pages/transaction_history_page.dart';
+import 'package:finance_app_for_nacha/pages/transfer_history_page.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -11,6 +13,7 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   final AppDatabase db = AppDatabase();
+  bool isMenuOpen = false;
   final TextEditingController nameController = TextEditingController();
 
   /// ===============================
@@ -39,9 +42,90 @@ class _WalletPageState extends State<WalletPage> {
     return db.deleteWalletRepo(id);
   }
 
+
+
   /// ===============================
   /// ADD / EDIT DIALOG
   /// ===============================
+
+    final TextEditingController transferAmountController = TextEditingController();
+    int? sourceWalletId;
+    int? targetWalletId;
+
+
+void openTransferDialog(List<WalletData> wallets) {
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder( 
+      builder: (context, setDialogState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Transfer Saldo', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            
+            DropdownButtonFormField<int>(
+              decoration: InputDecoration(labelText: 'Dari Dompet'),
+              initialValue: sourceWalletId,
+              items: wallets.map((w) => DropdownMenuItem(value: w.id, child: Text(w.name))).toList(),
+              onChanged: (val) => setDialogState(() => sourceWalletId = val),
+            ),
+            SizedBox(height: 16),
+            
+            DropdownButtonFormField<int>(
+              decoration: InputDecoration(labelText: 'Ke Dompet'),
+              initialValue: targetWalletId,
+              items: wallets.map((w) => DropdownMenuItem(value: w.id, child: Text(w.name))).toList(),
+              onChanged: (val) => setDialogState(() => targetWalletId = val),
+            ),
+            SizedBox(height: 16),
+           
+            TextField(
+              controller: transferAmountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Nominal Transfer',
+                prefixText: 'Rp ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal')),
+          ElevatedButton(
+            onPressed: () async {
+              if (sourceWalletId == null || targetWalletId == null || sourceWalletId == targetWalletId) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Please select different source and target wallets')),
+                );
+                return;
+              }
+              
+              double amount = double.tryParse(transferAmountController.text) ?? 0;
+              
+              try {
+                await db.executeTransfer(
+                  sourceId: sourceWalletId!,
+                  targetId: targetWalletId!,
+                  amount: amount,
+                );
+                Navigator.pop(context);
+                setState(() {}); 
+                transferAmountController.clear();
+              } catch (e) {
+                
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: Text('Transfer'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 void openDialog(WalletData? wallet) {
   if (wallet != null) {
     nameController.text = wallet.name;
@@ -221,6 +305,8 @@ void openDialog(WalletData? wallet) {
   );
 }
 
+
+
   /// ===============================
   /// UI
   /// ===============================
@@ -269,6 +355,28 @@ void openDialog(WalletData? wallet) {
                   ],
                 ),
                 child: ListTile(
+                  onTap: () {
+                    showModalBottomSheet(
+                              context: context,
+                              builder: (context) => Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.history),
+                                    title: const Text('Riwayat Transaksi'),
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                                      builder: (c) => TransactionHistoryPage(wallet: wallet))),
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.swap_horiz),
+                                    title: const Text('Riwayat Transfer'),
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                                      builder: (c) => TransferHistoryPage(wallet: wallet))),
+                                  ),
+                                ],
+                              ),
+                            );
+                  },
                   leading: const Icon(
                     Icons.account_balance_wallet_rounded,
                     color: Color(0xFF8C9EFF),
@@ -361,15 +469,66 @@ void openDialog(WalletData? wallet) {
         },
       ),
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF8C9EFF),
-         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50),
-        ),
-        onPressed: () => openDialog(null),
-        child: const Icon(Icons.add, color: Colors.white, size: 28,),
-        elevation: 4,
-      ),
+      
+
+
+      
+
+  floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (isMenuOpen)
+              FloatingActionButton.small(
+                heroTag: 'transfer_btn',
+                backgroundColor: Colors.white,
+                onPressed: () {
+                  setState(() => isMenuOpen = false);
+                    
+                  getAllWallets().then((wallets) {
+                    openTransferDialog(wallets);
+                  });
+                },
+                child: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF8C9EFF)),
+              ),
+            
+            const SizedBox(height: 12),
+
+           
+            if (isMenuOpen)
+              FloatingActionButton.small(
+                heroTag: 'add_btn',
+                backgroundColor: Colors.white,
+                onPressed: () {
+                  setState(() => isMenuOpen = false);
+                  openDialog(null); 
+                },
+                child: const Icon(Icons.add_rounded, color: Color(0xFF8C9EFF)),
+              ),
+
+            const SizedBox(height: 12),
+
+            
+            FloatingActionButton(
+              backgroundColor: const Color(0xFF8C9EFF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+              onPressed: () {
+                setState(() {
+                  isMenuOpen = !isMenuOpen;
+                });
+              },
+              child: AnimatedRotation(
+                duration: const Duration(milliseconds: 300),
+                turns: isMenuOpen ? 0.25 : 0, 
+                child: Icon(
+                  isMenuOpen ? Icons.close : Icons.menu_rounded, 
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              elevation: 4,
+            ),
+          ],
+        ),      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

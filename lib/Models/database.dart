@@ -6,14 +6,40 @@ import 'package:path_provider/path_provider.dart';
 import 'category.dart';
 import 'transaction.dart';
 import 'wallet.dart';
+import 'transfer.dart';
 
 part 'database.g.dart';
 
 
 
 @DriftDatabase(
-  tables: [Categories, Transactions, Wallet],
+  tables: [Categories, Transactions, Wallet, Transfers],
 )
+
+
+
+class TransferWithWalletNames {
+  final Transfer transfer;
+  final String sourceName;
+  final String targetName;
+
+  TransferWithWalletNames({
+    required this.transfer,
+    required this.sourceName,
+    required this.targetName,
+  });
+}
+
+class TransactionWithWallet {
+  final Transaction transaction;
+  final String walletName;
+
+  TransactionWithWallet({
+    required this.transaction,
+    required this.walletName,
+  });
+}
+
 class AppDatabase extends _$AppDatabase {
   // After generating code, this class needs to define a `schemaVersion` getter
   // and a constructor telling drift where the database should be stored.
@@ -21,28 +47,18 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
  @override
-int get schemaVersion => 3; // NAIK dari 2 ke 3!
+  int get schemaVersion => 4; // NAIK ke 4!
 
-@override
-MigrationStrategy get migration {
-  return MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-    },
-    onUpgrade: (Migrator m, int from, int to) async {
-      // Migration dari schema 1 ke 2: tambah table wallet
-      if (from < 2) {
-        await m.createTable(wallet);
-      }
-      
-      // Migration dari schema 2 ke 3: tambah kolom wallet_id di transactions
-      if (from < 3) {
-        await m.addColumn(transactions, transactions.wallet_id);
-      }
-    },
-  );
-}
-
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) await m.createTable(wallet);
+        if (from < 3) await m.addColumn(transactions, transactions.wallet_id);
+        if (from < 4) await m.createTable(transfers); // Migrasi ke tabel transfer
+      },
+    );
+  }
   // crud category
   Future<List<Category>>getAllCategoryRepo(int type) async {
     return await (select(categories)..where((tbl) => tbl.type.equals(type))).get();
@@ -99,6 +115,25 @@ MigrationStrategy get migration {
 Future<List<Transaction>> getAllTransactions() async {
   return await select(transactions).get();
 }
+
+Future<List<TransactionWithWallet>> getTransactionsByWallet(int walletId) async {
+  final query = select(transactions).join([
+    innerJoin(wallet, wallet.id.equalsExp(transactions.wallet_id)),
+  ])
+    ..where(transactions.wallet_id.equals(walletId))
+    ..orderBy([OrderingTerm.desc(transactions.transaction_date)]);
+
+  final result = await query.get();
+
+  return result.map((row) {
+    return TransactionWithWallet(
+      transaction: row.readTable(transactions),
+      walletName: row.readTable(wallet).name,
+    );
+  }).toList();
+}
+
+
 
 Future<void> updateTransaction(int id, TransactionsCompanion transaction) async {
   await (update(transactions)..where((tbl) => tbl.id.equals(id)))
@@ -194,6 +229,64 @@ Future<void> deleteTransactionWithWalletUpdate(int transactionId) async {
     rethrow;
   }
 }
+
+Future<void> executeTransfer({
+    required int sourceId,
+    required int targetId,
+    required double amount,
+    String? notes,
+  }) async {
+    await transaction(() async {
+      final now = DateTime.now();
+      
+      // 1. Catat di tabel Transfers
+      await into(transfers).insert(TransfersCompanion.insert(
+        source_wallet_id: sourceId,
+        target_wallet_id: targetId,
+        amount: amount,
+        transfer_date: now,
+        notes: Value(notes),
+        created: now,
+        updated_at: now,
+      ));
+
+      // 2. Kurangi Saldo Asal
+      final sWallet = await (select(wallet)..where((t) => t.id.equals(sourceId))).getSingle();
+      await (update(wallet)..where((t) => t.id.equals(sourceId))).write(
+        WalletCompanion(balance: Value(sWallet.balance - amount), updated_at: Value(now))
+      );
+
+      // 3. Tambah Saldo Tujuan
+      final tWallet = await (select(wallet)..where((t) => t.id.equals(targetId))).getSingle();
+      await (update(wallet)..where((t) => t.id.equals(targetId))).write(
+        WalletCompanion(balance: Value(tWallet.balance + amount), updated_at: Value(now))
+      );
+    });
+  }
+
+  // Ambil data transfer khusus untuk satu wallet (masuk atau keluar)
+  Future<List<TransferWithWalletNames>> getTransfersByWallet(int walletId) async {
+    final sourceWallet = alias(wallet, 'src');
+    final targetWallet = alias(wallet, 'dest');
+
+    final query = select(transfers).join([
+      innerJoin(sourceWallet, sourceWallet.id.equalsExp(transfers.source_wallet_id)),
+      innerJoin(targetWallet, targetWallet.id.equalsExp(transfers.target_wallet_id)),
+    ])
+      ..where(transfers.source_wallet_id.equals(walletId) | transfers.target_wallet_id.equals(walletId))
+      ..orderBy([OrderingTerm.desc(transfers.transfer_date)]);
+
+    final result = await query.get();
+
+    return result.map((row) {
+      return TransferWithWalletNames(
+        transfer: row.readTable(transfers),
+        sourceName: row.readTable(sourceWallet).name,
+        targetName: row.readTable(targetWallet).name,
+      );
+    }).toList();
+  }
+
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

@@ -15,31 +15,38 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AppDatabase db = AppDatabase();
-  bool showAllTime = false; // Toggle between daily and all-time
+  bool showAllTime = false; 
 
-  // Get transactions by selected date
+ 
   Future<List<TransactionWithCategory>> getTransactionsByDate(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+  final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+  final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
-    final query = db.select(db.transactions).join([
-      innerJoin(
-        db.categories,
-        db.categories.id.equalsExp(db.transactions.category_id),
-      ),
-    ])
-      ..where(db.transactions.transaction_date.isBetweenValues(startOfDay, endOfDay))
-      ..orderBy([OrderingTerm.desc(db.transactions.transaction_date)]);
+  final query = db.select(db.transactions).join([
+   
+    innerJoin(
+      db.categories,
+      db.categories.id.equalsExp(db.transactions.category_id),
+    ),
+    
+    innerJoin(
+      db.wallet,
+      db.wallet.id.equalsExp(db.transactions.wallet_id),
+    ),
+  ])
+    ..where(db.transactions.transaction_date.isBetweenValues(startOfDay, endOfDay))
+    ..orderBy([OrderingTerm.desc(db.transactions.transaction_date)]);
 
-    final results = await query.get();
+  final results = await query.get();
 
-    return results.map((row) {
-      return TransactionWithCategory(
-        transaction: row.readTable(db.transactions),
-        category: row.readTable(db.categories),
-      );
-    }).toList();
-  }
+  return results.map((row) {
+    return TransactionWithCategory(
+      transaction: row.readTable(db.transactions),
+      category: row.readTable(db.categories),
+      wallet: row.readTable(db.wallet), // Ambil data wallet di sini
+    );
+  }).toList();
+}
 
   // Calculate total income by date
   Future<int> getTotalIncome(DateTime date) async {
@@ -528,7 +535,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               SizedBox(height: 2),
                               Text(
-                                DateFormat('HH:mm').format(transaction.transaction_date),
+                                item.wallet.name.toString(), 
                                 style: GoogleFonts.montserrat(
                                   fontSize: 11,
                                   color: Colors.grey[500],
@@ -639,9 +646,11 @@ class _HomePageState extends State<HomePage> {
 class TransactionWithCategory {
   final Transaction transaction;
   final Category category;
+  final WalletData wallet;
 
   TransactionWithCategory({
     required this.transaction,
     required this.category,
+    required this.wallet,
   });
 }
