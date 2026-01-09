@@ -33,77 +33,16 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
   }
 
-  // Helper untuk memilih bulan dengan Month Picker Dialog
+  // Helper untuk memilih bulan secara sederhana
   Future<void> _selectMonth() async {
-    // final now = DateTime.now();
-    final picked = await showDialog<DateTime>(
+    // Kita gunakan showDatePicker tapi hanya fokus ke bulan/tahun
+    final DateTime? picked = await showDatePicker(
       context: context,
-      builder: (context) {
-        int selectedYear = selectedMonth.year;
-        int selectedMonthNum = selectedMonth.month;
-        return AlertDialog(
-          title: const Text('Pilih Bulan'),
-          content: SizedBox(
-            height: 200,
-            child: Column(
-              children: [
-                // Year Picker
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_left),
-                      onPressed: () {
-                        if (selectedYear > 2020) selectedYear--;
-                        (context as Element).markNeedsBuild();
-                      },
-                    ),
-                    Text('$selectedYear', style: const TextStyle(fontSize: 18)),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_right),
-                      onPressed: () {
-                        if (selectedYear < 2030) selectedYear++;
-                        (context as Element).markNeedsBuild();
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Month Grid
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 3,
-                    children: List.generate(12, (i) {
-                      final m = i + 1;
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop(DateTime(selectedYear, m, 1));
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: m == selectedMonthNum && selectedYear == selectedMonth.year ? Colors.blue[100] : Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blueAccent.withAlpha(60)),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            DateFormat.MMMM('id_ID').format(DateTime(0, m)),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      initialDate: selectedMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDatePickerMode: DatePickerMode.year, // Langsung pilih tahun/bulan
+      helpText: "PILIH BULAN",
     );
     if (picked != null) setState(() => selectedMonth = picked);
   }
@@ -229,7 +168,7 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
         double expense = 0;
         if (snapshot.hasData && snapshot.data != null) {
           for (var item in snapshot.data!) {
-            if (item.type == "income") {
+            if (item.type == 1 ) {
               income += item.amount;
             } else {
               expense += item.amount;
