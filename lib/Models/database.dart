@@ -33,6 +33,22 @@ class MonthlySummary {
   MonthlySummary({required this.totalIncome, required this.totalExpense});
 }
 
+class MonthlySummaryItem {
+  final DateTime date;
+  final String name;
+  final double amount;
+  final int type; // 1: income, 2: expense
+  final String categoryName;
+
+  MonthlySummaryItem({
+    required this.date,
+    required this.name,
+    required this.amount,
+    required this.type,
+    required this.categoryName,
+  });
+}
+
 class TransferWithWalletNames {
   final Transfer transfer;
   final String sourceName;
@@ -374,7 +390,7 @@ Future<void> executeTransfer({
 }
 
 // laporan bulanan
-Future<MonthlySummary> getMonthlySummary({int? walletId, required DateTime month}) async {
+Future<List<MonthlySummaryItem>> getMonthlySummary({int? walletId, required DateTime month}) async {
   final firstDay = DateTime(month.year, month.month, 1);
   final lastDay = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 
@@ -387,20 +403,23 @@ Future<MonthlySummary> getMonthlySummary({int? walletId, required DateTime month
   if (walletId != null) query.where(transactions.wallet_id.equals(walletId));
 
   final rows = await query.get();
-  double income = 0;
-  double expense = 0;
+  List<MonthlySummaryItem> items = [];
 
   for (var row in rows) {
     final t = row.readTable(transactions);
     final c = row.readTable(categories);
-    if (c.type == 1) income += t.amount;
-    if (c.type == 2) expense += t.amount;
+    items.add(MonthlySummaryItem(
+      date: t.transaction_date,
+      name: t.name,
+      amount: t.amount.toDouble(),
+      type: c.type,
+      categoryName: c.name,
+    ));
   }
 
-  return MonthlySummary(totalIncome: income, totalExpense: expense);
+  items.sort((a, b) => b.date.compareTo(a.date));
+  return items;
 }
-
-
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

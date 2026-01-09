@@ -161,11 +161,20 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
   }
 
   Widget _buildSummaryCard() {
-    return FutureBuilder<MonthlySummary>(
+    return FutureBuilder<List<MonthlySummaryItem>>(
       future: db.getMonthlySummary(walletId: selectedWalletId, month: selectedMonth),
       builder: (context, snapshot) {
-        final income = snapshot.data?.totalIncome ?? 0;
-        final expense = snapshot.data?.totalExpense ?? 0;
+        double income = 0;
+        double expense = 0;
+        if (snapshot.hasData && snapshot.data != null) {
+          for (var item in snapshot.data!) {
+            if (item.type == "income") {
+              income += item.amount;
+            } else {
+              expense += item.amount;
+            }
+          }
+        }
 
         return Container(
           margin: const EdgeInsets.all(16),
@@ -212,7 +221,7 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
           child: Icon(item.isCredit ? Icons.add : Icons.remove, color: item.isCredit ? Colors.green : Colors.red, size: 20),
         ),
         title: Text(item.title, style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text("${item.description} • ${DateFormat('dd MMM').format(item.date)}", style: const TextStyle(fontSize: 12)),
+        subtitle: Text("${item.description} • ${DateFormat('dd MMM yyy').format(item.date)}", style: const TextStyle(fontSize: 12)),
         trailing: Text(
           formatCurrency(item.amount),
           style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: item.isCredit ? Colors.green : Colors.red),
