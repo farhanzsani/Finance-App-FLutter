@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="finance_app_for_nacha"
+        android:label="Monchaa"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
