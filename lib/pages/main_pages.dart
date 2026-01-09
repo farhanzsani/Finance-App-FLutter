@@ -1,10 +1,10 @@
+import 'package:Monchaa/pages/mutation_report_page.dart';
 import 'package:calendar_appbar/calendar_appbar.dart';
 import 'package:Monchaa/pages/category_page.dart';
 import 'package:Monchaa/pages/home_page.dart';
 import 'package:Monchaa/pages/transaction_page.dart';
 import 'package:Monchaa/pages/wallet_page.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -15,6 +15,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   static const Color primaryColor = Color(0xFFCADEFC);
+  static const Color accentColor = Color(0xFF8C9EFF);
   
   int currentIndex = 0;
   DateTime selectedDate = DateTime.now();
@@ -31,7 +32,6 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  // Method to get current page based on index
   Widget _getCurrentPage() {
     switch (currentIndex) {
       case 0:
@@ -40,6 +40,8 @@ class _MainPageState extends State<MainPage> {
         return const CategoryPage();
       case 2:
         return WalletPage();
+      case 3:
+        return const ReportMutationPage();
       default:
         return HomePage(selectedDate: selectedDate);
     }
@@ -47,43 +49,33 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
+      // AppBar hanya muncul di Home (index 0) dengan CalendarAppBar
+      // Untuk halaman lain, kita buat null agar konten mengisi layar dari paling atas
       appBar: (currentIndex == 0)
           ? CalendarAppBar(
               backButton: false,
               locale: 'id',
-              white: const Color(0xFF8C9EFF), // background
-              black: const Color(0xFF2F3A5F), // teks (gelap & jelas)
-              accent: const Color(0xFFCADEFC), // highlight
+              white: accentColor, 
+              black: const Color(0xFF2F3A5F), 
+              accent: primaryColor, 
               onDateChanged: (value) {
                 onDateChanged(value);
               },
               firstDate: DateTime.now().subtract(const Duration(days: 140)),
               lastDate: DateTime.now(),
             )
-          : PreferredSize(
-              child: Container(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 36,
-                    horizontal: 16,
-                  ),
-                ),
-              ),
-              preferredSize: Size.fromHeight(100),
-            ),
+          : null, 
 
       body: _getCurrentPage(),
 
       floatingActionButton: Visibility(
-        visible: (currentIndex == 0) ? true : false,
+        visible: (currentIndex == 0),
         child: FloatingActionButton(
           onPressed: () async {
             await Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => TransactionPage()),
+              MaterialPageRoute(builder: (context) => const TransactionPage()),
             );
-            // Refresh the page after returning
             if (mounted) {
               setState(() {});
             }
@@ -91,7 +83,7 @@ class _MainPageState extends State<MainPage> {
           backgroundColor: primaryColor,
           shape: const CircleBorder(),
           elevation: 2,
-          child: const Icon(Icons.add, color: const Color(0xFF8C9EFF)),
+          child: const Icon(Icons.add, color: accentColor),
         ),
       ),
 
@@ -101,31 +93,44 @@ class _MainPageState extends State<MainPage> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         color: primaryColor,
-        elevation: 4,
+        elevation: 8,
         child: SizedBox(
-          height: 56,
+          height: 60,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: Icon(Icons.home, color: const Color(0xFF8C9EFF)),
-                onPressed: () {
-                  onTapped(0);
-                },
+                icon: Icon(
+                  Icons.home_rounded, 
+                  color: currentIndex == 0 ? Colors.white : accentColor
+                ),
+                onPressed: () => onTapped(0),
               ),
-              SizedBox(width: 100), // Space for FAB
+
               IconButton(
-                icon: Icon(Icons.list, color: const Color(0xFF8C9EFF)),
-                onPressed: () {
-                  onTapped(1);
-                },
+                icon: Icon(
+                  Icons.receipt_long_rounded, 
+                  color: currentIndex == 3 ? Colors.white : accentColor
+                ),
+                onPressed: () => onTapped(3),
+              ),
+
+              const SizedBox(width: 80), // Space for FAB
+
+              IconButton(
+                icon: Icon(
+                  Icons.category_rounded, 
+                  color: currentIndex == 1 ? Colors.white : accentColor
+                ),
+                onPressed: () => onTapped(1),
               ),
               
               IconButton(
-                icon: Icon(Icons.account_balance_wallet, color: const Color(0xFF8C9EFF)),
-                onPressed: () {
-                  onTapped(2);
-                },
+                icon: Icon(
+                  Icons.account_balance_wallet_rounded, 
+                  color: currentIndex == 2 ? Colors.white : accentColor
+                ),
+                onPressed: () => onTapped(2),
               ),
             ],
           ),

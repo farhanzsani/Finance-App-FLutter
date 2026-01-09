@@ -10,6 +10,29 @@ import 'transfer.dart';
 
 part 'database.g.dart';
 
+
+class MutationItem {
+  final DateTime date;
+  final String title;
+  final String description;
+  final double amount;
+  final bool isCredit;
+
+  MutationItem({
+    required this.date,
+    required this.title,
+    required this.description,
+    required this.amount,
+    required this.isCredit,
+  });
+}
+
+class MonthlySummary {
+  final double totalIncome;
+  final double totalExpense;
+  MonthlySummary({required this.totalIncome, required this.totalExpense});
+}
+
 class TransferWithWalletNames {
   final Transfer transfer;
   final String sourceName;
@@ -284,6 +307,99 @@ Future<void> executeTransfer({
       );
     }).toList();
   }
+
+
+  // fitur laporan mutasi wallet
+
+  Future<List<MutationItem>> getFilteredMutation({int? walletId, required DateTime month}) async {
+  final firstDay = DateTime(month.year, month.month, 1);
+  final lastDay = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+
+  // 1. Ambil Transaksi
+  var txQuery = select(transactions).join([
+    innerJoin(categories, categories.id.equalsExp(transactions.category_id)),
+  ]);
+  
+  txQuery.where(transactions.transaction_date.isBetweenValues(firstDay, lastDay));
+  if (walletId != null) txQuery.where(transactions.wallet_id.equals(walletId));
+
+  final txRows = await txQuery.get();
+
+  // 2. Ambil Transfer
+  var tfQuery = select(transfers).join([
+    innerJoin(alias(wallet, 'src'), alias(wallet, 'src').id.equalsExp(transfers.source_wallet_id)),
+    innerJoin(alias(wallet, 'dest'), alias(wallet, 'dest').id.equalsExp(transfers.target_wallet_id)),
+  ]);
+
+  tfQuery.where(transfers.transfer_date.isBetweenValues(firstDay, lastDay));
+  if (walletId != null) {
+    tfQuery.where(transfers.source_wallet_id.equals(walletId) | transfers.target_wallet_id.equals(walletId));
+  }
+
+  final tfRows = await tfQuery.get();
+  List<MutationItem> mutations = [];
+
+  // Mapping Transaksi
+  for (var row in txRows) {
+    final t = row.readTable(transactions);
+    final c = row.readTable(categories);
+    mutations.add(MutationItem(
+      date: t.transaction_date,
+      title: t.name,
+      description: "Kategori: ${c.name}",
+      amount: t.amount.toDouble(),
+      isCredit: c.type == 1,
+    ));
+  }
+
+  // Mapping Transfer
+  for (var row in tfRows) {
+    final tf = row.readTable(transfers);
+    final srcName = row.readTable(alias(wallet, 'src')).name;
+    final destName = row.readTable(alias(wallet, 'dest')).name;
+
+    bool isIncoming = walletId != null && tf.target_wallet_id == walletId;
+    
+    mutations.add(MutationItem(
+      date: tf.transfer_date,
+      title: isIncoming ? "Transfer Masuk" : "Transfer Keluar",
+      description: isIncoming ? "Dari: $srcName" : "Ke: $destName",
+      amount: tf.amount,
+      isCredit: isIncoming,
+    ));
+  }
+
+  mutations.sort((a, b) => b.date.compareTo(a.date));
+  return mutations;
+}
+
+// laporan bulanan
+Future<MonthlySummary> getMonthlySummary({int? walletId, required DateTime month}) async {
+  final firstDay = DateTime(month.year, month.month, 1);
+  final lastDay = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+
+  // Query transaksi dalam rentang bulan
+  var query = select(transactions).join([
+    innerJoin(categories, categories.id.equalsExp(transactions.category_id)),
+  ]);
+  
+  query.where(transactions.transaction_date.isBetweenValues(firstDay, lastDay));
+  if (walletId != null) query.where(transactions.wallet_id.equals(walletId));
+
+  final rows = await query.get();
+  double income = 0;
+  double expense = 0;
+
+  for (var row in rows) {
+    final t = row.readTable(transactions);
+    final c = row.readTable(categories);
+    if (c.type == 1) income += t.amount;
+    if (c.type == 2) expense += t.amount;
+  }
+
+  return MonthlySummary(totalIncome: income, totalExpense: expense);
+}
+
 
 
   static QueryExecutor _openConnection() {

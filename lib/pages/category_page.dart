@@ -233,6 +233,7 @@ class _CategoryPageState extends State<CategoryPage> {
         child: Column(
           children: [
             // Header Section
+            SizedBox(height: 60),
             Center(
               child: Text("Categories",
                   style: GoogleFonts.montserrat(
