@@ -267,6 +267,66 @@ Future<void> deleteTransactionWithWalletUpdate(int transactionId) async {
   }
 }
 
+// Edit transaction WITH wallet balance update
+Future<void> editTransactionWithWalletUpdate({
+  required int transactionId,
+  required String name,
+  required int categoryId,
+  required DateTime transactionDate,
+  required int amount,
+  required int walletId,
+  required bool isExpense,
+}) async {
+  try {
+    // 1. Get old transaction
+    final oldTransaction = await (select(transactions)
+      ..where((tbl) => tbl.id.equals(transactionId))).getSingle();
+    final oldCategory = await (select(categories)
+      ..where((tbl) => tbl.id.equals(oldTransaction.category_id))).getSingle();
+    final oldWallet = await (select(wallet)
+      ..where((tbl) => tbl.id.equals(oldTransaction.wallet_id))).getSingle();
+
+    // 2. Restore old wallet balance
+    bool wasExpense = oldCategory.type == 2;
+    double restoredBalance = wasExpense
+      ? oldWallet.balance + oldTransaction.amount
+      : oldWallet.balance - oldTransaction.amount;
+    await (update(wallet)..where((tbl) => tbl.id.equals(oldTransaction.wallet_id))).write(
+      WalletCompanion(
+        balance: Value(restoredBalance),
+        updated_at: Value(DateTime.now()),
+      ),
+    );
+
+    // 3. Update transaction
+    await (update(transactions)..where((tbl) => tbl.id.equals(transactionId))).write(
+      TransactionsCompanion(
+        name: Value(name),
+        category_id: Value(categoryId),
+        wallet_id: Value(walletId),
+        transaction_date: Value(transactionDate),
+        amount: Value(amount),
+        updated_at: Value(DateTime.now()),
+      ),
+    );
+
+    // 4. Update new wallet balance
+    final newWallet = await (select(wallet)..where((tbl) => tbl.id.equals(walletId))).getSingle();
+    double newBalance = isExpense
+      ? newWallet.balance - amount
+      : newWallet.balance + amount;
+    await (update(wallet)..where((tbl) => tbl.id.equals(walletId))).write(
+      WalletCompanion(
+        balance: Value(newBalance),
+        updated_at: Value(DateTime.now()),
+      ),
+    );
+  } catch (e) {
+    print('Error in editTransactionWithWalletUpdate: $e');
+    rethrow;
+  }
+}
+
 Future<void> executeTransfer({
     required int sourceId,
     required int targetId,

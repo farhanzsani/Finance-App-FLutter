@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:Monchaa/Models/database.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:flutter/services.dart';
 
 class HomePage extends StatefulWidget {
   final DateTime? selectedDate;
@@ -17,36 +18,214 @@ class _HomePageState extends State<HomePage> {
   final AppDatabase db = AppDatabase();
   bool showAllTime = false; 
 
- 
-  Future<List<TransactionWithCategory>> getTransactionsByDate(DateTime date) async {
-  final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
-  final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+  List<Category> categories = [];
+  List<WalletData> wallets = [];
 
-  final query = db.select(db.transactions).join([
-   
-    innerJoin(
-      db.categories,
-      db.categories.id.equalsExp(db.transactions.category_id),
-    ),
-    
-    innerJoin(
-      db.wallet,
-      db.wallet.id.equalsExp(db.transactions.wallet_id),
-    ),
-  ])
-    ..where(db.transactions.transaction_date.isBetweenValues(startOfDay, endOfDay))
-    ..orderBy([OrderingTerm.desc(db.transactions.transaction_date)]);
+  Future<void> loadCategoriesAndWallets() async {
+    categories = await db.select(db.categories).get();
+    wallets = await db.select(db.wallet).get();
+  }
 
-  final results = await query.get();
+  Future<void> showEditTransactionDialog(BuildContext context, TransactionWithCategory item) async {
+    await loadCategoriesAndWallets();
+    final TextEditingController editNameController = TextEditingController(text: item.transaction.name);
+    final TextEditingController editAmountController = TextEditingController(text: item.transaction.amount.toString());
+    int editCategoryId = item.category.id;
+    int editWalletId = item.wallet.id;
+    DateTime editDate = item.transaction.transaction_date;
+    bool editIsExpense = item.category.type == 2;
 
-  return results.map((row) {
-    return TransactionWithCategory(
-      transaction: row.readTable(db.transactions),
-      category: row.readTable(db.categories),
-      wallet: row.readTable(db.wallet), // Ambil data wallet di sini
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text('Edit Transaksi', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => editIsExpense = false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: !editIsExpense ? Colors.green : Colors.transparent,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.download_rounded, color: !editIsExpense ? Colors.white : const Color(0xFF8C9EFF), size: 22),
+                                  const SizedBox(width: 8),
+                                  Text('Income', style: GoogleFonts.montserrat(color: !editIsExpense ? Colors.white : const Color(0xFF8C9EFF), fontSize: 15, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => editIsExpense = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: editIsExpense ? Colors.red : Colors.transparent,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.upload_rounded, color: editIsExpense ? Colors.white : const Color(0xFF8C9EFF), size: 22),
+                                  const SizedBox(width: 8),
+                                  Text('Expense', style: GoogleFonts.montserrat(color: editIsExpense ? Colors.white : const Color(0xFF8C9EFF), fontSize: 15, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Jumlah', style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: editAmountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.bold, color: editIsExpense ? Colors.red : Colors.green),
+                      decoration: InputDecoration(hintText: '0', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Deskripsi', style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: editNameController,
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: Makan siang, Gaji bulanan',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF8C9EFF), size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Kategori', style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    DropdownButton<int>(
+                      isExpanded: true,
+                      value: editCategoryId,
+                      items: categories.map((cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name))).toList(),
+                      onChanged: (val) => setState(() { if (val != null) editCategoryId = val; }),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Wallet', style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    DropdownButton<int>(
+                      isExpanded: true,
+                      value: editWalletId,
+                      items: wallets.map((w) => DropdownMenuItem(value: w.id, child: Text(w.name))).toList(),
+                      onChanged: (val) => setState(() { if (val != null) editWalletId = val; }),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Tanggal & Waktu', style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.calendar_today_rounded, color: Color(0xFF8C9EFF), size: 20),
+                      title: Text(DateFormat('EEEE, dd MMMM yyyy HH:mm', 'id_ID').format(editDate), style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w500)),
+                      trailing: const Icon(Icons.access_time_filled_rounded, color: Color(0xFF8C9EFF)),
+                      onTap: () async {
+                        DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: editDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2101),
+                        );
+                        if (pickedDate != null) {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(editDate),
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              editDate = DateTime(
+                                pickedDate.year, pickedDate.month, pickedDate.day,
+                                pickedTime.hour, pickedTime.minute
+                              );
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Batal', style: GoogleFonts.montserrat()),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    String cleanAmount = editAmountController.text.replaceAll('.', '');
+                    int? finalAmount = int.tryParse(cleanAmount);
+                    if (finalAmount == null || finalAmount <= 0 || editNameController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Mohon lengkapi semua data!'), backgroundColor: Colors.red));
+                      return;
+                    }
+                    await db.editTransactionWithWalletUpdate(
+                      transactionId: item.transaction.id,
+                      name: editNameController.text,
+                      categoryId: editCategoryId,
+                      transactionDate: editDate,
+                      amount: finalAmount,
+                      walletId: editWalletId,
+                      isExpense: editIsExpense,
+                    );
+                    if (mounted) Navigator.pop(context, true);
+                  },
+                  child: Text('Simpan', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-  }).toList();
-}
+  }
+
+  Future<List<TransactionWithCategory>> getTransactionsByDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    final query = db.select(db.transactions).join([
+      innerJoin(
+        db.categories,
+        db.categories.id.equalsExp(db.transactions.category_id),
+      ),
+      innerJoin(
+        db.wallet,
+        db.wallet.id.equalsExp(db.transactions.wallet_id),
+      ),
+    ])
+      ..where(db.transactions.transaction_date.isBetweenValues(startOfDay, endOfDay))
+      ..orderBy([OrderingTerm.desc(db.transactions.transaction_date)]);
+
+    final results = await query.get();
+
+    return results.map((row) {
+      return TransactionWithCategory(
+        transaction: row.readTable(db.transactions),
+        category: row.readTable(db.categories),
+        wallet: row.readTable(db.wallet),
+      );
+    }).toList();
+  }
 
   // Calculate total income by date
   Future<int> getTotalIncome(DateTime date) async {
@@ -183,6 +362,133 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+  }
+
+  // Show dialog to edit transaction
+  void _showEditTransactionDialog(TransactionWithCategory item) async {
+    final transaction = item.transaction;
+    final nameController = TextEditingController(text: transaction.name);
+    final amountController = TextEditingController(text: transaction.amount.toString());
+    DateTime selectedDateTime = transaction.transaction_date;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Edit Transaksi', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: 'Nama Transaksi'),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: 'Jumlah'),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DateFormat('dd MMM yyyy • HH:mm').format(selectedDateTime),
+                        style: GoogleFonts.montserrat(fontSize: 13),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.calendar_today, size: 20),
+                      onPressed: () async {
+                        final pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDateTime,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (pickedDate != null) {
+                          final pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              selectedDateTime = DateTime(
+                                pickedDate.year,
+                                pickedDate.month,
+                                pickedDate.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Kategori: ${item.category.name}', style: GoogleFonts.montserrat(fontSize: 13, color: Colors.grey[600])),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Wallet: ${item.wallet.name}', style: GoogleFonts.montserrat(fontSize: 13, color: Colors.grey[600])),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Batal', style: GoogleFonts.montserrat(color: Colors.grey[600])),
+            ),
+            TextButton(
+              onPressed: () async {
+                final newName = nameController.text.trim();
+                final newAmount = int.tryParse(amountController.text.trim()) ?? transaction.amount;
+                if (newName.isEmpty || newAmount <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Nama dan jumlah harus diisi dengan benar')),
+                  );
+                  return;
+                }
+                final updatedTransaction = transaction.copyWith(
+                  name: newName,
+                  amount: newAmount,
+                  transaction_date: selectedDateTime,
+                );
+                await db.editTransactionWithWalletUpdate(
+                  transactionId: updatedTransaction.id,
+                  name: updatedTransaction.name,
+                  categoryId: updatedTransaction.category_id,
+                  transactionDate: updatedTransaction.transaction_date,
+                  amount: updatedTransaction.amount,
+                  walletId: updatedTransaction.wallet_id,
+                  isExpense: item.category.type == 2,
+                );
+                setState(() {});
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Transaksi berhasil diupdate'), backgroundColor: Colors.green),
+                );
+              },
+              child: Text('Simpan', style: GoogleFonts.montserrat(color: Color(0xFF8C9EFF), fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -575,9 +881,7 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   InkWell(
                                     onTap: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Edit feature coming soon')),
-                                      );
+                                      _showEditTransactionDialog(item);
                                     },
                                     child: Icon(
                                       Icons.edit,

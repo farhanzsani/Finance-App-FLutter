@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Monchaa/Models/database.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +22,9 @@ class _TransactionPageState extends State<TransactionPage> {
   int? selectedCategoryId;
   int? selectedWalletId;
   
+  // LOGIK BARU: Variabel penampung data asli agar aman dari error parse
+  DateTime selectedDate = DateTime.now();
+  
   TextEditingController dateController = TextEditingController();
   TextEditingController amountController = TextEditingController();
   TextEditingController nameController = TextEditingController();
@@ -29,8 +33,10 @@ class _TransactionPageState extends State<TransactionPage> {
   void initState() {
     super.initState();
     loadData();
-    // Set default date to today
-    dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    // Inisialisasi waktu sekarang
+    selectedDate = DateTime.now();
+    // Set text controller untuk tampilan awal
+    dateController.text = DateFormat('yyyy-MM-dd HH:mm').format(selectedDate);
   }
 
   Future<void> loadData() async {
@@ -48,77 +54,47 @@ class _TransactionPageState extends State<TransactionPage> {
       }
     } catch (e) {
       print('Error loading data: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
   Future<void> saveTransaction() async {
-    // Validate inputs
-    if (amountController.text.isEmpty || 
-        dateController.text.isEmpty ||
+    // LOGIK BARU: Bersihkan titik ribuan
+    String cleanAmount = amountController.text.replaceAll('.', '');
+    int? finalAmount = int.tryParse(cleanAmount);
+
+    if (finalAmount == null || 
+        finalAmount <= 0 ||
         nameController.text.isEmpty ||
         selectedCategoryId == null ||
         selectedWalletId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Mohon lengkapi semua field'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Mohon lengkapi semua data chaaa!'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
       return;
     }
 
-    // Show loading
-    if (mounted) {
-      setState(() {
-        isLoading = true;
-      });
-    }
+    setState(() => isLoading = true);
 
     try {
+      // LOGIK BARU: Simpan pakai objek selectedDate langsung (Aman dari error parse)
       await db.insertTransactionWithWalletUpdate(
         name: nameController.text,
         categoryId: selectedCategoryId!,
-        transactionDate: DateTime.parse(dateController.text),
-        amount: int.parse(amountController.text),
+        transactionDate: selectedDate, 
+        amount: finalAmount, 
         walletId: selectedWalletId!,
         isExpense: isExpense,
       );
 
-      // Navigate back
-      if (mounted) {
-        Navigator.of(context).pop(true); // Return true to indicate success
-      }
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      print('Error saving transaction: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     }
   }
 
@@ -130,21 +106,57 @@ class _TransactionPageState extends State<TransactionPage> {
     super.dispose();
   }
 
+  // LOGIK BARU: Fungsi pilih tanggal DAN jam
+  Future<void> _pickDateTime() async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: Color(0xFF8C9EFF)),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(selectedDate),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          selectedDate = DateTime(
+            pickedDate.year, pickedDate.month, pickedDate.day,
+            pickedTime.hour, pickedTime.minute
+          );
+          // Update controller hanya untuk visual
+          dateController.text = DateFormat('yyyy-MM-dd HH:mm').format(selectedDate);
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF8C9EFF)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF8C9EFF)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Transaksi Baru",
           style: GoogleFonts.montserrat(
-            color: Color(0xFF8C9EFF),
+            color: const Color(0xFF8C9EFF),
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -157,128 +169,43 @@ class _TransactionPageState extends State<TransactionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Type Selector (Income/Expense)
+              // DESIGN LAMA: Type Selector
               Container(
-                padding: EdgeInsets.all(4),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFFCADEFC),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withAlpha(50),
                       blurRadius: 10,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isExpense = false;
-                            loadData();
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            gradient: !isExpense
-                                ? LinearGradient(
-                                    colors: [Colors.green[400]!, Colors.green[600]!],
-                                  )
-                                : null,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.download_rounded,
-                                color: !isExpense ? Colors.white : Colors.grey[400],
-                                size: 22,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Income',
-                                style: GoogleFonts.montserrat(
-                                  color: !isExpense ? Colors.white : Colors.grey[400],
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isExpense = true;
-                            loadData();
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            gradient: isExpense
-                                ? LinearGradient(
-                                    colors: [Colors.red[400]!, Colors.red[600]!],
-                                  )
-                                : null,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.upload_rounded,
-                                color: isExpense ? Colors.white : Colors.grey[400],
-                                size: 22,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Expense',
-                                style: GoogleFonts.montserrat(
-                                  color: isExpense ? Colors.white : Colors.grey[400],
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    _buildTypeButton("Income", Icons.download_rounded, Colors.green, !isExpense),
+                    _buildTypeButton("Expense", Icons.upload_rounded, Colors.red, isExpense),
                   ],
                 ),
               ),
 
-              SizedBox(height: 28),
+              const SizedBox(height: 28),
 
-              // Amount Input (Big & Prominent)
-              Text(
-                'Jumlah',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              SizedBox(height: 10),
+              // DESIGN LAMA: Amount Input
+              _buildLabel('Jumlah'),
+              const SizedBox(height: 10),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withAlpha(50),
                       blurRadius: 10,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -289,15 +216,20 @@ class _TransactionPageState extends State<TransactionPage> {
                       style: GoogleFonts.montserrat(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF8C9EFF),
+                        color: const Color(0xFF8C9EFF),
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: TextFormField(
                         controller: amountController,
                         keyboardType: TextInputType.number,
                         autofocus: true,
+                        // LOGIK BARU: Formatter Currency
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          CurrencyInputFormatter(),
+                        ],
                         style: GoogleFonts.montserrat(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -318,9 +250,9 @@ class _TransactionPageState extends State<TransactionPage> {
                 ),
               ),
 
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-              // Name Input
+              // DESIGN LAMA: Name Input
               _buildInputField(
                 label: 'Deskripsi',
                 controller: nameController,
@@ -328,272 +260,102 @@ class _TransactionPageState extends State<TransactionPage> {
                 icon: Icons.description_outlined,
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-              // Category Dropdown
+              // DESIGN LAMA: Category Dropdown
               _buildLabel('Kategori'),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 10),
+              _buildCustomContainer(
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     isExpanded: true,
                     value: selectedCategoryId,
-                    hint: Text(
-                      "Pilih kategori",
-                      style: GoogleFonts.montserrat(color: Colors.grey[400]),
-                    ),
-                    icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF8C9EFF)),
+                    hint: Text("Pilih kategori", style: GoogleFonts.montserrat(color: Colors.grey[400])),
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8C9EFF)),
                     items: categories.map((cat) {
                       return DropdownMenuItem(
                         value: cat.id,
                         child: Row(
                           children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: (isExpense ? Colors.red : Colors.green).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                isExpense ? Icons.upload_rounded : Icons.download_rounded,
-                                color: isExpense ? Colors.red : Colors.green,
-                                size: 18,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text(
-                              cat.name,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            Text(cat.name, style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCategoryId = value;
-                      });
-                    },
+                    onChanged: (value) => setState(() => selectedCategoryId = value),
                   ),
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-              // Wallet Dropdown
+              // DESIGN LAMA: Wallet Dropdown
               _buildLabel('Wallet'),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 10),
+              _buildCustomContainer(
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     isExpanded: true,
                     value: selectedWalletId,
-                    hint: Text(
-                      "Pilih wallet",
-                      style: GoogleFonts.montserrat(color: Colors.grey[400]),
-                    ),
-                    icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF8C9EFF)),
+                    hint: Text("Pilih wallet", style: GoogleFonts.montserrat(color: Colors.grey[400])),
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8C9EFF)),
                     items: wallets.map((wallet) {
                       return DropdownMenuItem(
                         value: wallet.id,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF8C9EFF).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.account_balance_wallet_rounded,
-                                color: Color(0xFF8C9EFF),
-                                size: 18,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    wallet.name,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Saldo: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(wallet.balance)}',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: Text(wallet.name, style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w600)),
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedWalletId = value;
-                      });
-                    },
+                    onChanged: (value) => setState(() => selectedWalletId = value),
                   ),
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-              // Date Picker
-              _buildLabel('Tanggal'),
-              SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
+              // DESIGN LAMA: Date Picker (Updated logic)
+              _buildLabel('Tanggal & Waktu'),
+              const SizedBox(height: 10),
+              _buildCustomContainer(
                 child: ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF8C9EFF).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.calendar_today_rounded,
-                      color: Color(0xFF8C9EFF),
-                      size: 20,
-                    ),
-                  ),
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today_rounded, color: Color(0xFF8C9EFF), size: 20),
                   title: Text(
-                    dateController.text.isEmpty
-                        ? 'Pilih tanggal'
-                        : DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(
-                            DateTime.parse(dateController.text),
-                          ),
-                    style: GoogleFonts.montserrat(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: dateController.text.isEmpty ? Colors.grey[400] : Colors.black87,
-                    ),
+                    DateFormat('EEEE, dd MMMM yyyy HH:mm', 'id_ID').format(selectedDate),
+                    style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w500),
                   ),
-                  trailing: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Color(0xFF8C9EFF),
-                  ),
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: dateController.text.isEmpty
-                          ? DateTime.now()
-                          : DateTime.parse(dateController.text),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2101),
-                      builder: (context, child) {
-                        return Theme(
-                          data: Theme.of(context).copyWith(
-                            colorScheme: ColorScheme.light(
-                              primary: Color(0xFF8C9EFF),
-                              onPrimary: Colors.white,
-                              onSurface: Colors.black,
-                            ),
-                          ),
-                          child: child!,
-                        );
-                      },
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        dateController.text = DateFormat('yyyy-MM-dd').format(picked);
-                      });
-                    }
-                  },
+                  trailing: const Icon(Icons.access_time_filled_rounded, color: Color(0xFF8C9EFF)),
+                  onTap: _pickDateTime, // Panggil fungsi gabungan tanggal & jam
                 ),
               ),
 
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-              // Save Button
+              // DESIGN LAMA: Save Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: isLoading ? null : saveTransaction,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF8C9EFF),
+                    backgroundColor: const Color(0xFF8C9EFF),
                     foregroundColor: Colors.white,
-                    elevation: 0,
-                    disabledBackgroundColor: Colors.grey[300],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    shadowColor: Color(0xFF8C9EFF).withOpacity(0.4),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shadowColor: const Color(0xFF8C9EFF).withAlpha(40),
                   ),
                   child: isLoading
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
+                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle_outline, size: 24),
-                            SizedBox(width: 8),
-                            Text(
-                              'Simpan Transaksi',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            const Icon(Icons.check_circle_outline, size: 24),
+                            const SizedBox(width: 8),
+                            Text('Simpan Transaksi', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w600)),
                           ],
                         ),
                 ),
               ),
-
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -601,59 +363,76 @@ class _TransactionPageState extends State<TransactionPage> {
     );
   }
 
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-  }) {
+  // --- UI Helpers (Design Lama) ---
+
+ Widget _buildTypeButton(String title, IconData icon, Color color, bool isActive) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            isExpense = (title == "Expense");
+            loadData();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isActive ? color : Colors.transparent, 
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon, 
+                color: isActive ? Colors.white : Color(0xFF8C9EFF), 
+                size: 22
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.montserrat(
+                  color: isActive ? Colors.white : Color(0xFF8C9EFF),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 10, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildInputField({required String label, required TextEditingController controller, required String hint, required IconData icon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
+        const SizedBox(height: 10),
+        _buildCustomContainer(
           child: TextFormField(
             controller: controller,
-            style: GoogleFonts.montserrat(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.montserrat(
-                color: Colors.grey[400],
-                fontSize: 14,
-              ),
-              prefixIcon: Container(
-                margin: EdgeInsets.all(12),
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Color(0xFF8C9EFF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: Color(0xFF8C9EFF),
-                  size: 20,
-                ),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              hintStyle: GoogleFonts.montserrat(color: Colors.grey[300], fontSize: 14),
+              prefixIcon: Icon(icon, color: const Color(0xFF8C9EFF), size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
         ),
@@ -662,13 +441,26 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.montserrat(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Colors.grey[700],
-      ),
+    return Text(text, style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700]));
+  }
+}
+
+// LOGIK BARU: Class Formatter untuk titik ribuan otomatis
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.selection.baseOffset == 0) return newValue;
+
+    String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanText.isEmpty) return newValue.copyWith(text: '');
+
+    double value = double.parse(cleanText);
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    String newText = formatter.format(value).trim();
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

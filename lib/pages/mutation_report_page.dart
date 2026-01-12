@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:Monchaa/Models/database.dart'; // Sesuaikan package
+import 'package:Monchaa/Models/database.dart';
 
 class ReportMutationPage extends StatefulWidget {
   final int? initialWalletId;
@@ -26,80 +26,163 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
 
   Future<void> _loadWallets() async {
     final data = await db.getAllWalletRepo();
-    setState(() => wallets = data);
+    if (mounted) setState(() => wallets = data);
   }
 
   String formatCurrency(double amount) {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
   }
 
-  // Helper untuk memilih bulan secara sederhana
+  // --- FITUR BARU: MONTH PICKER DIALOG ---
   Future<void> _selectMonth() async {
-    // Kita gunakan showDatePicker tapi hanya fokus ke bulan/tahun
-    final DateTime? picked = await showDatePicker(
+    // Memunculkan dialog untuk memilih tahun terlebih dahulu, lalu bulan
+    showDialog(
       context: context,
-      initialDate: selectedMonth,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDatePickerMode: DatePickerMode.year, // Langsung pilih tahun/bulan
-      helpText: "PILIH BULAN",
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Pilih Bulan & Tahun", style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: SizedBox(
+            width: 300,
+            height: 300,
+            child: YearPicker(
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+              selectedDate: selectedMonth,
+              onChanged: (DateTime dateTime) {
+                // Setelah pilih tahun, munculkan pilihan bulan
+                Navigator.pop(context);
+                _showMonthSelector(dateTime);
+              },
+            ),
+          ),
+        );
+      },
     );
-    if (picked != null) setState(() => selectedMonth = picked);
+  }
+
+  void _showMonthSelector(DateTime yearDate) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Pilih Bulan - ${yearDate.year}",
+                style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                  ),
+                  itemCount: 12,
+                  itemBuilder: (context, index) {
+                    DateTime monthData = DateTime(yearDate.year, index + 1);
+                    bool isSelected = selectedMonth.month == monthData.month && selectedMonth.year == monthData.year;
+                    
+                    return InkWell(
+                      onTap: () {
+                        setState(() => selectedMonth = monthData);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF8C9EFF) : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          DateFormat('MMM', 'id_ID').format(monthData),
+                          style: GoogleFonts.montserrat(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          selectedWalletId == null ? "Laporan & Mutasi" : "Mutasi Dompet",
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        backgroundColor: const Color(0xFF8C9EFF),
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          // 1. Filter Bar (Modern & Minimalis)
-          _buildFilterSection(),
-
-          // 2. Summary Card (Dashboard Bulanan)
-          _buildSummaryCard(),
-
-          // 3. Mutation List
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            child: Row(
-              children: [
-                const Icon(Icons.receipt_long, size: 20, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(
-                  "Riwayat Transaksi",
-                  style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+      backgroundColor: const Color(0xFFF5F7FA),
+      // PERBAIKAN: Gunakan SafeArea agar tidak tertutup notch/status bar
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            
+            // Header Title Manual (Karena AppBar null di MainPage)
+            Center(
+              child: Text(
+                selectedWalletId == null ? "Laporan & Mutasi" : "Mutasi Dompet",
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 18,
+                  color: const Color(0xFF8C9EFF)
                 ),
-              ],
+              ),
             ),
-          ),
+            
+            const SizedBox(height: 10),
 
-          Expanded(
-            child: FutureBuilder<List<MutationItem>>(
-              future: db.getFilteredMutation(walletId: selectedWalletId, month: selectedMonth),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                final data = snapshot.data ?? [];
-                if (data.isEmpty) return _buildEmptyState();
+            // 1. Filter Section (Month & Wallet)
+            _buildFilterSection(),
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: data.length,
-                  itemBuilder: (context, index) => _buildMutationTile(data[index]),
-                );
-              },
+            // 2. Summary Card
+            _buildSummaryCard(),
+
+            // 3. Mutation List
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.receipt_long_rounded, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Riwayat Transaksi",
+                    style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            Expanded(
+              child: FutureBuilder<List<MutationItem>>(
+                future: db.getFilteredMutation(walletId: selectedWalletId, month: selectedMonth),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF8C9EFF)));
+                  }
+                  final data = snapshot.data ?? [];
+                  if (data.isEmpty) return _buildEmptyState();
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: data.length,
+                    itemBuilder: (context, index) => _buildMutationTile(data[index]),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -107,26 +190,26 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF8C9EFF),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
-      ),
       child: Row(
         children: [
-          // Month Selector
+          // Month Selector Button (Kiri)
           Expanded(
             child: GestureDetector(
               onTap: _selectMonth,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                decoration: BoxDecoration(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today, size: 16, color: Colors.white),
+                    const Icon(Icons.calendar_month_rounded, size: 18, color: Color(0xFF8C9EFF)),
                     const SizedBox(width: 10),
                     Text(
                       DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth),
-                      style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ],
                 ),
@@ -134,18 +217,21 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
             ),
           ),
           const SizedBox(width: 12),
-          // Wallet Selector
+          // Wallet Selector (Kanan)
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+              ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int?>(
                   value: selectedWalletId,
-                  dropdownColor: const Color(0xFF8C9EFF),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8C9EFF)),
                   isExpanded: true,
-                  style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.montserrat(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                   items: [
                     const DropdownMenuItem(value: null, child: Text("Semua Dompet")),
                     ...wallets.map((w) => DropdownMenuItem(value: w.id, child: Text(w.name))),
@@ -168,28 +254,35 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
         double expense = 0;
         if (snapshot.hasData && snapshot.data != null) {
           for (var item in snapshot.data!) {
-            if (item.type == 1 ) {
-              income += item.amount;
-            } else {
-              expense += item.amount;
-            }
+            if (item.type == 1) income += item.amount;
+            else expense += item.amount;
           }
         }
 
         return Container(
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFF8C9EFF), Color(0xFFCADEFC)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: const Color(0xFF8C9EFF).withAlpha(30), blurRadius: 10, offset: const Offset(0, 5))],
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8C9EFF), Color(0xFFCADEFC)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8C9EFF).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildSummaryItem("Pemasukan", income, Colors.greenAccent),
               Container(width: 1, height: 40, color: Colors.white24),
-              _buildSummaryItem("Pengeluaran", expense, Colors.redAccent[100]!),
+              _buildSummaryItem("Pengeluaran", expense, const Color(0xFFFFB2B2)),
             ],
           ),
         );
@@ -200,11 +293,11 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
   Widget _buildSummaryItem(String label, double amount, Color color) {
     return Column(
       children: [
-        Text(label, style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 12)),
+        Text(label, style: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.8), fontSize: 12)),
         const SizedBox(height: 4),
         Text(
           formatCurrency(amount),
-          style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
         ),
       ],
     );
@@ -213,18 +306,38 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
   Widget _buildMutationTile(MutationItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 10)]),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: CircleAvatar(
-          backgroundColor: item.isCredit ? Colors.green[50] : Colors.red[50],
-          child: Icon(item.isCredit ? Icons.add : Icons.remove, color: item.isCredit ? Colors.green : Colors.red, size: 20),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (item.isCredit ? Colors.green : Colors.red).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            item.isCredit ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
+            color: item.isCredit ? Colors.green : Colors.red,
+            size: 24,
+          ),
         ),
-        title: Text(item.title, style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text("${item.description} • ${DateFormat('dd MMM yyy').format(item.date)}", style: const TextStyle(fontSize: 12)),
+        title: Text(item.title, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text(
+          "${item.description}\n${DateFormat('dd MMM yyyy • HH:mm', 'id_ID').format(item.date)}",
+          style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey[600]),
+        ),
+        isThreeLine: true,
         trailing: Text(
           formatCurrency(item.amount),
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: item.isCredit ? Colors.green : Colors.red),
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.bold, 
+            fontSize: 14,
+            color: item.isCredit ? Colors.green : Colors.red
+          ),
         ),
       ),
     );
@@ -235,9 +348,12 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.query_stats, size: 60, color: Colors.grey[300]),
+          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text("Tidak ada transaksi", style: GoogleFonts.montserrat(color: Colors.grey)),
+          Text(
+            "Belum ada mutasi transaksi",
+            style: GoogleFonts.montserrat(color: Colors.grey, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

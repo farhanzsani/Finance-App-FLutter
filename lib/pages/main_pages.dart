@@ -14,8 +14,9 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  static const Color primaryColor = Color(0xFFCADEFC);
-  static const Color accentColor = Color(0xFF8C9EFF);
+  // Warna tema Monchaa
+  static const Color primaryColor = Color(0xFFCADEFC); // Biru Muda (Background Nav)
+  static const Color accentColor = Color(0xFF8C9EFF);  // Biru Ungu (Icon & Header)
   
   int currentIndex = 0;
   DateTime selectedDate = DateTime.now();
@@ -26,12 +27,7 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  void onDateChanged(DateTime date) {
-    setState(() {
-      selectedDate = date;
-    });
-  }
-
+  // Fungsi untuk mendapatkan halaman saat ini
   Widget _getCurrentPage() {
     switch (currentIndex) {
       case 0:
@@ -39,7 +35,7 @@ class _MainPageState extends State<MainPage> {
       case 1:
         return const CategoryPage();
       case 2:
-        return WalletPage();
+        return const WalletPage();
       case 3:
         return const ReportMutationPage();
       default:
@@ -50,91 +46,92 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar hanya muncul di Home (index 0) dengan CalendarAppBar
-      // Untuk halaman lain, kita buat null agar konten mengisi layar dari paling atas
+      // 1. ATUR APPBAR: Hanya muncul di Home agar CalendarAppBar tidak mengganggu halaman lain
       appBar: (currentIndex == 0)
           ? CalendarAppBar(
               backButton: false,
-              locale: 'id',
+              locale: 'id_ID', // Gunakan id_ID agar konsisten dengan inisialisasi di main.dart
               white: accentColor, 
               black: const Color(0xFF2F3A5F), 
               accent: primaryColor, 
+              selectedDate: selectedDate, // Tambahkan ini agar kalender sinkron dengan state
               onDateChanged: (value) {
-                onDateChanged(value);
+                setState(() {
+                  selectedDate = value;
+                });
               },
-              firstDate: DateTime.now().subtract(const Duration(days: 140)),
-              lastDate: DateTime.now(),
+              // Rentang tanggal kalender
+              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+              lastDate: DateTime.now().add(const Duration(days: 1)),
             )
           : null, 
 
       body: _getCurrentPage(),
 
+      // 2. ATUR FAB: Tombol tambah transaksi hanya muncul di Home
       floatingActionButton: Visibility(
         visible: (currentIndex == 0),
         child: FloatingActionButton(
           onPressed: () async {
-            await Navigator.of(context).push(
+            // Navigator mengarah ke halaman input transaksi
+            final result = await Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const TransactionPage()),
             );
-            if (mounted) {
-              setState(() {});
+            
+            // Jika ada perubahan data (true), refresh tampilan Home
+            if (result == true && mounted) {
+              setState(() {}); 
             }
           },
           backgroundColor: primaryColor,
           shape: const CircleBorder(),
-          elevation: 2,
-          child: const Icon(Icons.add, color: accentColor),
+          elevation: 4,
+          child: const Icon(Icons.add, color: accentColor, size: 30),
         ),
       ),
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
+      // 3. ATUR NAVIGATION BAR: Membuat navigasi bawah yang modern
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         color: primaryColor,
-        elevation: 8,
+        elevation: 10,
         child: SizedBox(
           height: 60,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              IconButton(
-                icon: Icon(
-                  Icons.home_rounded, 
-                  color: currentIndex == 0 ? Colors.white : accentColor
-                ),
-                onPressed: () => onTapped(0),
-              ),
-
-              IconButton(
-                icon: Icon(
-                  Icons.receipt_long_rounded, 
-                  color: currentIndex == 3 ? Colors.white : accentColor
-                ),
-                onPressed: () => onTapped(3),
-              ),
-
-              const SizedBox(width: 80), // Space for FAB
-
-              IconButton(
-                icon: Icon(
-                  Icons.category_rounded, 
-                  color: currentIndex == 1 ? Colors.white : accentColor
-                ),
-                onPressed: () => onTapped(1),
-              ),
+              // Menu Home
+              _buildNavItem(Icons.home_rounded, 0),
               
-              IconButton(
-                icon: Icon(
-                  Icons.account_balance_wallet_rounded, 
-                  color: currentIndex == 2 ? Colors.white : accentColor
-                ),
-                onPressed: () => onTapped(2),
-              ),
+              // Menu Mutasi & Report (Ikon baru yang kita sepakati)
+              _buildNavItem(Icons.receipt_long_rounded, 3),
+
+              const SizedBox(width: 48), // Space kosong untuk Notch FAB di tengah
+
+              // Menu Kategori
+              _buildNavItem(Icons.category_rounded, 1),
+              
+              // Menu Dompet/Wallet
+              _buildNavItem(Icons.account_balance_wallet_rounded, 2),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper Widget untuk membangun item navigasi agar kode lebih bersih
+  Widget _buildNavItem(IconData icon, int index) {
+    bool isActive = (currentIndex == index);
+    return IconButton(
+      onPressed: () => onTapped(index),
+      icon: Icon(
+        icon,
+        size: 28,
+        color: isActive ? Colors.white : accentColor.withOpacity(0.7),
       ),
     );
   }
