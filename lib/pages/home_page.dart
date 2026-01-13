@@ -175,7 +175,7 @@ class _HomePageState extends State<HomePage> {
                     String cleanAmount = editAmountController.text.replaceAll('.', '');
                     int? finalAmount = int.tryParse(cleanAmount);
                     if (finalAmount == null || finalAmount <= 0 || editNameController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Mohon lengkapi semua data!'), backgroundColor: Colors.red));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('lengkapi dulu datanya chaaa!'), backgroundColor: Colors.red));
                       return;
                     }
                     await db.editTransactionWithWalletUpdate(
@@ -350,7 +350,7 @@ class _HomePageState extends State<HomePage> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Transaction deleted'),
+          content: Text('Transaksi berhasil dihapus chaaa'),
           backgroundColor: Colors.green,
         ),
       );
@@ -459,7 +459,7 @@ class _HomePageState extends State<HomePage> {
                 final newAmount = int.tryParse(amountController.text.trim()) ?? transaction.amount;
                 if (newName.isEmpty || newAmount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Nama dan jumlah harus diisi dengan benar')),
+                    SnackBar(content: Text('Nama dan jumlah harus diisi dengan benar chaa')),
                   );
                   return;
                 }
@@ -480,7 +480,7 @@ class _HomePageState extends State<HomePage> {
                 setState(() {});
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Transaksi berhasil diupdate'), backgroundColor: Colors.green),
+                  SnackBar(content: Text('Transaksi berhasil diupdate chaaa'), backgroundColor: Colors.green),
                 );
               },
               child: Text('Simpan', style: GoogleFonts.montserrat(color: Color(0xFF8C9EFF), fontWeight: FontWeight.w600)),
@@ -771,7 +771,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'Tidak ada transaksi',
+                            'Hari ini belom ada transaksi nih chaa',
                             style: GoogleFonts.montserrat(
                               fontSize: 16,
                               color: Colors.grey[500],
@@ -905,7 +905,7 @@ class _HomePageState extends State<HomePage> {
                                             ),
                                           ),
                                           content: Text(
-                                            'Yakin mau hapus transaksi "${transaction.name}"?',
+                                            'Yakin mau hapus transaksi "${transaction.name} chaa"?',
                                             style: GoogleFonts.montserrat(),
                                           ),
                                           actions: [

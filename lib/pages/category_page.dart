@@ -404,18 +404,18 @@ class _CategoryPageState extends State<CategoryPage> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'No categories yet',
+                            'Kamu belom bikin category chaaa',
                             style: GoogleFonts.montserrat(
-                              fontSize: 18,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.grey[600],
                             ),
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Tap the + button to add a new category',
+                            'tekan tombol + di bawah buat bikin category baru chaaa',
                             style: GoogleFonts.montserrat(
-                              fontSize: 14,
+                              fontSize: 10,
                               color: Colors.grey[500],
                             ),
                           ),
@@ -492,7 +492,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       title: Text(
-                                        'Delete Category',
+                                        'Hapus Category',
                                         style: GoogleFonts.montserrat(
                                           fontWeight: FontWeight.w600,
                                         ),

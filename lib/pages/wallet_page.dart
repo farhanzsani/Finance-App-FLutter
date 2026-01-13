@@ -325,7 +325,7 @@ class _WalletPageState extends State<WalletPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : wallets.isEmpty
-              ? const Center(child: Text('No wallets yet'))
+              ? const Center(child: Text('Belum ada wallet nih chaa'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: wallets.length,

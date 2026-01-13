@@ -27,7 +27,7 @@ class TransferHistoryPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Belum ada riwayat transfer'));
+            return const Center(child: Text('Belum ada riwayat transfer nih chaa'));
           }
 
           final list = snapshot.data!;

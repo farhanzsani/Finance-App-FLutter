@@ -69,7 +69,7 @@ class _TransactionPageState extends State<TransactionPage> {
         selectedWalletId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Mohon lengkapi semua data chaaa!'),
+          content: const Text('lengkapi dulu datanya chaaa!'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

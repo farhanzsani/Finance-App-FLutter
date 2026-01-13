@@ -32,7 +32,7 @@ class TransactionHistoryPage extends StatelessWidget {
           final list = snapshot.data ?? [];
           if (list.isEmpty) {
             return Center(
-              child: Text('Belum ada transaksi', 
+              child: Text('Belum ada transaksi nih chaa', 
               style: GoogleFonts.montserrat(color: Colors.grey)),
             );
           }

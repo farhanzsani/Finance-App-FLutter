@@ -351,7 +351,7 @@ class _ReportMutationPageState extends State<ReportMutationPage> {
           Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            "Belum ada mutasi transaksi",
+            "Belum ada mutasi transaksi nih chaa",
             style: GoogleFonts.montserrat(color: Colors.grey, fontWeight: FontWeight.w500),
           ),
         ],

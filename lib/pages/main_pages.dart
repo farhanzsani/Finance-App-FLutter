@@ -15,8 +15,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   // Warna tema Monchaa
-  static const Color primaryColor = Color(0xFFCADEFC); // Biru Muda (Background Nav)
-  static const Color accentColor = Color(0xFF8C9EFF);  // Biru Ungu (Icon & Header)
+  static const Color primaryColor = Color(0xFFCADEFC); 
+  static const Color accentColor = Color(0xFF8C9EFF);  
   
   int currentIndex = 0;
   DateTime selectedDate = DateTime.now();
@@ -68,17 +68,17 @@ class _MainPageState extends State<MainPage> {
 
       body: _getCurrentPage(),
 
-      // 2. ATUR FAB: Tombol tambah transaksi hanya muncul di Home
+      
       floatingActionButton: Visibility(
         visible: (currentIndex == 0),
         child: FloatingActionButton(
           onPressed: () async {
-            // Navigator mengarah ke halaman input transaksi
+           
             final result = await Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const TransactionPage()),
             );
             
-            // Jika ada perubahan data (true), refresh tampilan Home
+          
             if (result == true && mounted) {
               setState(() {}); 
             }
